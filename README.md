@@ -259,6 +259,15 @@ snapd
 
 ---
 
+## Tray Icon & Startup (Bodhi / Moksha)
+
+Bodhi Update Manager includes an optional system tray icon that can be launched manually:
+
+```bash
+bodhi-update-manager-tray
+
+---
+
 ## Design Philosophy
 
 - Lightweight
