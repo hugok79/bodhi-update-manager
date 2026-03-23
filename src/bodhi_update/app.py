@@ -206,7 +206,6 @@ class UpdateManagerWindow(Gtk.Window):
         self.category_combo.append("kernel", "Kernel")
         self.category_combo.append("system", "System")
         # Optional backends: only add a filter entry when discovered.
-        from bodhi_update.backends import get_registry  # noqa: PLC0415
         _registered_ids = {b.backend_id for b in get_registry().get_all_backends()}
         if "snap" in _registered_ids:
             self.category_combo.append("snap", "Snap")
@@ -411,7 +410,6 @@ class UpdateManagerWindow(Gtk.Window):
         box.set_border_width(8)
 
         # Optional backend visibility — only show toggles for registered backends.
-        from bodhi_update.backends import get_registry  # noqa: PLC0415
         _registered_ids = {b.backend_id for b in get_registry().get_all_backends()}
 
         snap_check: Gtk.CheckButton | None = None
@@ -856,16 +854,15 @@ class UpdateManagerWindow(Gtk.Window):
         message: str,
         updates: List[UpdateItem],
         total_bytes: int,
-        cache_loaded: bool,
     ) -> bool:
-        log.info(f"Refresh finished. {len(updates)} updates. Success: {ok}")
+        log.info("Refresh finished. %d updates. Success: %s", len(updates), ok)
         self._set_refresh_busy(False)
 
         # Always populate the store, even on fatal failure
         self._populate_store(updates)
 
         # Always update the count status so the total "N updates available" is shown.
-        # Only label as cached if the refresh actually failed.
+        # If the refresh failed the displayed data comes from the prior cache.
         self._update_count_status(len(updates), total_bytes, cached=(not ok))
 
         if not ok and message:
@@ -875,7 +872,7 @@ class UpdateManagerWindow(Gtk.Window):
 
         return False
 
-    def _refresh_worker(self, prefs: dict) -> None:
+    def _refresh_worker(self) -> None:
         messages = []
         backends = get_registry().get_all_backends()
 
@@ -889,17 +886,15 @@ class UpdateManagerWindow(Gtk.Window):
 
         updates: List[UpdateItem] = []
         total_bytes = 0
-        cache_loaded = False
 
         for backend in backends:
             try:
                 b_updates, b_bytes = backend.get_updates()
                 updates.extend(b_updates)
                 total_bytes += b_bytes
-                cache_loaded = True
                 successful_backends += 1
             except Exception as exc:  # pylint: disable=broad-except
-                log.error(f"Backend {backend.display_name} get_updates failed: {exc}")
+                log.error("Backend %s get_updates failed: %s", backend.display_name, exc)
                 messages.append(f"{backend.display_name} get_updates failed. ({exc})")
 
         # Only hard-fail if NO enabled backend succeeded
@@ -909,11 +904,11 @@ class UpdateManagerWindow(Gtk.Window):
         if messages:
             final_msg = " · ".join(messages)
 
-        log.info(f"Finished querying backends. Total updates: {len(updates)}")
+        log.info("Finished querying backends. Total updates: %d", len(updates))
 
         GLib.idle_add(  # type: ignore[call-arg]
             self._finish_refresh_ui,
-            not fatal_fail, final_msg, updates, total_bytes, cache_loaded
+            not fatal_fail, final_msg, updates, total_bytes
         )
 
     # ------------------------------------------------------------------ #
@@ -975,8 +970,8 @@ class UpdateManagerWindow(Gtk.Window):
         )
 
     def _launch_install(self, argv: list[str], title: str) -> None:
-        log.info(f"Starting installation: {title}")
-        log.debug(f"Command: {argv}")
+        log.info("Starting installation: %s", title)
+        log.debug("Command: %s", argv)
         self._start_install_progress(title)
         self._set_status("Installation started.")
         self._spawn_install_command(argv)
@@ -1011,7 +1006,7 @@ class UpdateManagerWindow(Gtk.Window):
             self.reboot_info_bar.show()
 
     def _finish_install_failure(self, exit_code: int) -> None:
-        log.error(f"Installation failed with exit code: {exit_code}")
+        log.error("Installation failed with exit code: %s", exit_code)
         self._set_install_busy(False)
         self.install_progress.set_fraction(0.0)
         self.install_progress.set_text("Failed")
@@ -1145,9 +1140,7 @@ class UpdateManagerWindow(Gtk.Window):
         self._set_status("Checking for updates...")
         log.info("Starting background refresh for updates.")
 
-        # Pass a thread-local copy of preferences to avoid mutation risks
-        prefs_copy = dict(self.prefs)
-        worker = threading.Thread(target=self._refresh_worker, args=(prefs_copy,), daemon=True)
+        worker = threading.Thread(target=self._refresh_worker, daemon=True)
         worker.start()
 
     def _build_install_target_command(

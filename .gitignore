@@ -16,7 +16,6 @@ test-assets/brokenpkg/
 # Local test assets
 test-assets/
 purge-reinstall.sh
-purge-reinstall.sh
 
 # Debian build artifacts
 debian/*.debhelper
@@ -36,3 +35,10 @@ debian/bodhi-update-manager/
 __pycache__/
 *.pyc
 
+# Local dev scripts
+dev-reinstall.sh
+reinstall.sh
+
+# Local-only dev utilities
+dev-*.sh
+*.local.sh
