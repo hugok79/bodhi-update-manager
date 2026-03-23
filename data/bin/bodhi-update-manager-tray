@@ -1,11 +1,5 @@
 #!/usr/bin/python3
-"""Launcher for Bodhi Update Manager.
-
-This script is installed at /usr/bin/bodhi-update-manager by the Debian
-package.  It prepends the application tree to sys.path so that the
-bodhi_update package is importable without modifying site-packages, then
-delegates to the real application entry point.
-"""
+"""Launcher for the Bodhi Update Manager system tray icon."""
 
 import os
 import sys
@@ -24,11 +18,6 @@ if _val:
     else:
         os.environ.pop("GTK3_MODULES", None)
 
-import gi                          # noqa: E402
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk      # noqa: E402
+from bodhi_update.tray import main  # noqa: E402
 
-from bodhi_update.app import main  # noqa: E402
-
-Gtk.Window.set_default_icon_name("bodhi-update-manager")
 main()

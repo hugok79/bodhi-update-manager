@@ -18,3 +18,5 @@ override_dh_auto_install:
 	install -d debian/bodhi-update-manager/usr/bin
 	install -m 755 data/bin/bodhi-update-manager \
 	    debian/bodhi-update-manager/usr/bin/bodhi-update-manager
+	install -m 755 data/bin/bodhi-update-manager-tray \
+	    debian/bodhi-update-manager/usr/bin/bodhi-update-manager-tray

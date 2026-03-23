@@ -432,6 +432,7 @@ class UpdateManagerWindow(Gtk.Window):
 
         if response == Gtk.ResponseType.APPLY:
             changed = False
+
             if snap_check is not None:
                 new_val = snap_check.get_active()
                 if self.prefs.get("show_snap", True) != new_val:
