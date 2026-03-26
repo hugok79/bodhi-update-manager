@@ -39,12 +39,9 @@ LOCALE_DIR = os.path.join(
     "locale"
 )
 
-#gettext.bindtextdomain(APP_NAME, LOCALE_DIR)
 gettext.bindtextdomain(APP_NAME, "/usr/share/locale")
 gettext.textdomain(APP_NAME)
 _ = gettext.gettext
-
-# ngettext for plurals
 ngettext = gettext.ngettext
 
 class UpdateManagerWindow(Gtk.Window):
@@ -350,7 +347,6 @@ class UpdateManagerWindow(Gtk.Window):
 
         self.install_title_label = Gtk.Label()
         self.install_title_label.set_xalign(0.0)
-        #self.install_title_label.set_markup("<b>Installing updates...</b>")
         self.install_title_label.set_markup("<b>%s</b>" % _("Installing updates..."))
         self.install_page.pack_start(self.install_title_label, False, False, 0)
 
@@ -484,7 +480,6 @@ class UpdateManagerWindow(Gtk.Window):
         box.add(outer)
 
         title = Gtk.Label()
-        #title.set_markup("<b>Bodhi Update Manager</b>")
         title.set_markup("<b>%s</b>" % _("Bodhi Update Manager"))
         title.set_justify(Gtk.Justification.CENTER)
         title.set_xalign(0.5)
@@ -675,10 +670,6 @@ class UpdateManagerWindow(Gtk.Window):
             )
             return
 
-		# TEMP: attempt to manage plurals with ngettext
-		# original code commented
-		
-       # plural = "s" if count != 1 else ""
         has_unknown_size = any(
             row[self.COL_RAW_SIZE] == 0 and row[self.COL_BACKEND] != "apt"
             for row in self.store
@@ -687,8 +678,6 @@ class UpdateManagerWindow(Gtk.Window):
             size_str = f"{format_size(total_bytes)}+" if total_bytes > 0 else _("Unknown")
         else:
             size_str = format_size(total_bytes)
-
-       # message = f"{count} update{plural} available · Download: {size_str}"
        
         message = ngettext(
 		    "%(count)d update available · Download: %(size)s",
@@ -699,7 +688,6 @@ class UpdateManagerWindow(Gtk.Window):
 		    "size": size_str
         }
         if cached:
-        #message += " · Cached package data"
             message = _("%(message)s · Cached package data") % {"message": message}
 				
         # Give a lightweight hint if optional backends found anything.
@@ -712,8 +700,6 @@ class UpdateManagerWindow(Gtk.Window):
                 extras.append(label)
 
         if extras:
-			# TEMP: n3 ngettext
-            #message += f" (includes {', '.join(extras)})"
             message = _("%(message)s (includes %(extras)s)") % {
         "message": message,
         "extras": ", ".join(extras)
@@ -761,10 +747,6 @@ class UpdateManagerWindow(Gtk.Window):
         else:
             dl_part = _("Unknown")
 
-	# TEMP: n.2 ngettext code
-
-       # plural = "s" if total_selected != 1 else ""
-       # self._set_status(f"{total_selected} update{plural} selected · Download: {dl_part}")
         message = ngettext(
 		    "%(count)d update selected · Download: %(size)s",
 		    "%(count)d updates selected · Download: %(size)s",
@@ -917,7 +899,6 @@ class UpdateManagerWindow(Gtk.Window):
         if not ok and message:
             # Append the failure message to the status rather than overwriting the count
             current_status = self.status_label.get_text()
-            #self._set_status(f"{current_status}  —  Warning: {message}")
             self._set_status(_("%(current_status)s — Warning: %(message)s") %
             {"current_status":current_status,
             "message":message})
@@ -979,11 +960,8 @@ class UpdateManagerWindow(Gtk.Window):
         self._set_install_busy(True)
         self.install_output_started = False
         self.stack.set_visible_child_name("install")
-
-        #self.install_title_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
         self.install_title_label.set_markup(
-			"<b>%s</b>" % GLib.markup_escape_text(title)
-		)
+			"<b>%s</b>" % GLib.markup_escape_text(title))
         self.install_phase_label.set_text(_("Waiting for authentication..."))
         self.install_progress.set_fraction(0.0)
         self.install_progress.set_show_text(True)
@@ -1034,7 +1012,6 @@ class UpdateManagerWindow(Gtk.Window):
     def _launch_deb_install(self, deb_path: str) -> None:
         """Switch to the install screen and install a local .deb file."""
         deb_name = os.path.basename(deb_path)
-        #self._start_install_progress(f"Installing {deb_name}...")
         self._start_install_progress(_("Installing %(deb_name)s...")
         %{"deb_name":deb_name})
 
@@ -1045,12 +1022,10 @@ class UpdateManagerWindow(Gtk.Window):
             self.install_progress.set_fraction(0.0)
             self.install_progress.set_text(_("Failed"))
             self.install_phase_label.set_text(str(exc))
-            #self._set_status(f"Validation failed: {exc}")
             self._set_status(_("Validation failed: %(exc)s") %
             {"exc":exc})
             return
 
-        #self._launch_install(argv, f"Installing {deb_name}...")
         self._launch_install(argv, _("Installing %(deb_name)s...") %
         {"deb_name":deb_name})
 
@@ -1079,7 +1054,6 @@ class UpdateManagerWindow(Gtk.Window):
         self.install_details_revealer.set_reveal_child(True)
         self.show_details_button.set_active(True)
         self.show_details_button.set_label(_("Hide Details"))
-        #self._set_status(f"Update failed. Exit code: {exit_code}")
         self._set_status(_("Update failed. Exit code: %(exit_code)s") %
         {"exit_code":exit_code})
 
@@ -1111,7 +1085,6 @@ class UpdateManagerWindow(Gtk.Window):
         try:
             subprocess.Popen([privilege_tool, get_helper_path(), "reboot"])
         except OSError as exc:
-            #self._set_status(f"Failed to initiate reboot: {exc}")
             self._set_status(_("Failed to initiate reboot: %(exc)s") %
             {"exc":exc})
 
@@ -1237,7 +1210,6 @@ class UpdateManagerWindow(Gtk.Window):
         registry = get_registry()
         backend = registry.get_backend(backend_id)
         if not backend:
-            #raise RuntimeError(f"Requested installation for unknown backend: {backend_id}")
             raise RuntimeError(_("Requested installation for unknown backend: %(backend_id)s")
             % {"backend_id":backend_id})
 
