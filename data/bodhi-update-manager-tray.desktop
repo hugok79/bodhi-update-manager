@@ -2,7 +2,11 @@
 Version=1.0
 Type=Application
 Name=Bodhi Update Manager Tray
+Name[it]=Bodhi Update Manager Tray
+Name[pl]=Zasobnik Menedżera Aktualizacji Bodhi
 Comment=Launch the Bodhi Update Manager tray applet
+Comment[it]=Avvia il tray applet del Bodhi Update Manager
+Comment[pl]=Uruchamia aplet Bodhi Update Manager w zasobniku
 Exec=bodhi-update-manager-tray
 Icon=bodhi-update-manager
 Terminal=false
