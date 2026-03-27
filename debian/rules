@@ -14,9 +14,18 @@ override_dh_auto_install:
 	    debian/bodhi-update-manager/usr/lib/bodhi-update-manager/
 	find debian/bodhi-update-manager/usr/lib/bodhi-update-manager \
 	    -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
-	# Install the launcher script with the executable bit set.
+
+	# Install the launcher scripts with the executable bit set.
 	install -d debian/bodhi-update-manager/usr/bin
 	install -m 755 data/bin/bodhi-update-manager \
 	    debian/bodhi-update-manager/usr/bin/bodhi-update-manager
 	install -m 755 data/bin/bodhi-update-manager-tray \
 	    debian/bodhi-update-manager/usr/bin/bodhi-update-manager-tray
+
+	# Compile gettext translations (.po → .mo) into the staged package tree.
+	for po in po/*.po; do \
+	    [ -f "$$po" ] || continue; \
+	    lang=$$(basename "$$po" .po); \
+	    install -d debian/bodhi-update-manager/usr/share/locale/$$lang/LC_MESSAGES; \
+	    msgfmt "$$po" -o debian/bodhi-update-manager/usr/share/locale/$$lang/LC_MESSAGES/bodhi-update-manager.mo; \
+	done
