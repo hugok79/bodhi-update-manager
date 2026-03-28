@@ -292,7 +292,7 @@ class UpdateManagerWindow(Gtk.Window):
         icon_column.add_attribute(icon_renderer, "icon-name", self.COL_ICON)
 
         icon_column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        icon_column.set_fixed_width(48)
+        icon_column.set_fixed_width(70)
         icon_column.set_resizable(False)
 
         self.tree.append_column(icon_column)
@@ -303,7 +303,7 @@ class UpdateManagerWindow(Gtk.Window):
         toggle_renderer.connect("toggled", self.on_toggle_selected)
         toggle_column = Gtk.TreeViewColumn(_("Upgrade"), toggle_renderer, active=self.COL_SELECTED)
         toggle_column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        toggle_column.set_fixed_width(72)
+        toggle_column.set_fixed_width(90)
         self.tree.append_column(toggle_column)
 
         # Package column — always uses Pango markup so the name stays bold.
