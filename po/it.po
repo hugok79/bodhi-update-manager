@@ -332,7 +332,7 @@ msgstr "Riavvio fallito: %(exc)s"
 
 #: src/bodhi_update/app.py:1105
 msgid "This may take a few minutes."
-msgstr "Installo... Potrebbe volerci del tempo."
+msgstr "Potrebbe volerci del tempo."
 
 #: src/bodhi_update/app.py:1179
 msgid "Checking for updates..."
