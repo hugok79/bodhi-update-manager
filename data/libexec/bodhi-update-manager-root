@@ -18,9 +18,8 @@ Auth handshake (non-reboot commands only):
     The GUI passes --sentinel <path> on the command line (pkexec strips env).
     The helper writes to that file immediately before running apt-get.
     The GUI polls for the file to detect that pkexec authentication succeeded.
-  sudo/doas path — stdout marker:
-    The helper prints "UPDATE_MANAGER_INSTALL_STARTED" to stdout before apt-get.
-    The GUI's VTE contents-changed watcher uses this to detect auth success.
+  sudo/doas path — spawn:
+    The GUI transitions to RUNNING immediately after spawning the process.
 """
 
 from __future__ import annotations
@@ -66,9 +65,7 @@ def _validate_deb_path(path: str) -> str:
 def _signal_auth_success(sentinel_path: str | None) -> None:
     """Signal the GUI that authentication has succeeded.
 
-    Writes to the sentinel file (pkexec path, passed via --sentinel arg)
-    and prints the stdout marker (sudo/doas path).  Both are safe to call
-    regardless of which tool is in use.
+    Writes to the sentinel file (pkexec path, passed via --sentinel arg).
     """
     # pkexec path: write sentinel file if provided on the command line.
     if sentinel_path:
@@ -77,9 +74,6 @@ def _signal_auth_success(sentinel_path: str | None) -> None:
                 f.write("started\n")
         except OSError:
             pass  # Non-fatal: GUI will time out and fall back gracefully.
-
-    # sudo/doas path: stdout marker watched by VTE contents-changed.
-    print("UPDATE_MANAGER_INSTALL_STARTED", flush=True)
 
 
 # ---------------------------------------------------------------------------

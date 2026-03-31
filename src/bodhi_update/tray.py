@@ -1,85 +1,152 @@
-"""GTK StatusIcon tray companion for Bodhi Update Manager.
+"""Integrated tray indicator for the Update Manager.
 
-Provides a lightweight system tray icon with a right-click menu.
-No polling, no daemon, no background refresh — manual launch only.
+Owns exactly one tray icon per application instance.  All menu actions
+operate on the shared UpdateManagerWindow passed in at construction time —
+no second window is ever spawned.
+
+Indicator backend priority:
+  1. AppIndicator3 (Ayatana) — preferred on modern Ubuntu/Debian DE stacks
+  2. Gtk.StatusIcon          — universal GTK3 fallback
 """
 
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
+from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
+if TYPE_CHECKING:
+    from bodhi_update.app import UpdateManagerWindow
 
-# Path to the main launcher, resolvable both from source tree and installed.
-_LAUNCHER = "/usr/bin/bodhi-update-manager"
+# Try to import AppIndicator3 (Ayatana or classic libappindicator).
+_AppIndicator = None
+try:
+    gi.require_version("AyatanaAppIndicator3", "0.1")
+    from gi.repository import AyatanaAppIndicator3 as _AppIndicator  # type: ignore[assignment]
+except (ValueError, ImportError):
+    pass
 
-
-def _open_update_manager() -> None:
-    """Spawn the main Bodhi Update Manager window."""
-    # Prefer the installed launcher; fall back to running as a module
-    # so the tray is usable directly from the source tree.
-    if os.path.isfile(_LAUNCHER):
-        argv = [_LAUNCHER]
-    else:
-        argv = [sys.executable, "-m", "bodhi_update.app"]
+if _AppIndicator is None:
     try:
-        subprocess.Popen(argv)
-    except OSError as exc:
-        _show_error(f"Could not launch Bodhi Update Manager:\n{exc}")
+        gi.require_version("AppIndicator3", "0.1")
+        from gi.repository import AppIndicator3 as _AppIndicator  # type: ignore[assignment]
+    except (ValueError, ImportError):
+        pass
 
 
-def _show_error(msg: str) -> None:
-    dialog = Gtk.MessageDialog(
-        message_type=Gtk.MessageType.ERROR,
-        buttons=Gtk.ButtonsType.CLOSE,
-        text=msg,
-    )
-    dialog.run()
-    dialog.destroy()
+# ---------------------------------------------------------------------------
+# Tray implementation
+# ---------------------------------------------------------------------------
 
+class TrayIcon:
+    """System-tray icon whose actions operate on *window*.
 
-def _build_menu() -> Gtk.Menu:
-    menu = Gtk.Menu()
+    Call :meth:`destroy` to remove the icon when the application exits.
+    """
 
-    open_item = Gtk.MenuItem(label="Open Update Manager")
-    open_item.connect("activate", lambda _: _open_update_manager())
-    menu.append(open_item)
+    def __init__(self, window: "UpdateManagerWindow") -> None:
+        self._window = window
+        self._indicator = None  # AppIndicator3 handle if available
+        self._status_icon = None  # Gtk.StatusIcon handle if falling back
 
-    menu.append(Gtk.SeparatorMenuItem())
+        menu = self._build_menu()
 
-    quit_item = Gtk.MenuItem(label="Quit")
-    quit_item.connect("activate", lambda _: Gtk.main_quit())
-    menu.append(quit_item)
+        if _AppIndicator is not None:
+            self._indicator = _AppIndicator.Indicator.new(
+                "bodhi-update-manager",
+                "bodhi-update-manager",
+                _AppIndicator.IndicatorCategory.APPLICATION_STATUS,
+            )
+            self._indicator.set_status(_AppIndicator.IndicatorStatus.ACTIVE)
+            self._indicator.set_menu(menu)
+        else:
+            icon = Gtk.StatusIcon()
+            icon.set_from_icon_name("bodhi-update-manager")
+            icon.set_tooltip_text("Update Manager")
+            icon.set_visible(True)
+            icon.connect("activate", lambda _: self._toggle_window())
+            icon.connect("popup-menu", self._on_status_icon_popup)
+            self._status_icon = icon
+            self._menu = menu  # keep alive
 
-    menu.show_all()
-    return menu
+    # ------------------------------------------------------------------
+    # Menu construction
+    # ------------------------------------------------------------------
 
+    def _build_menu(self) -> Gtk.Menu:
+        menu = Gtk.Menu()
 
-def main() -> None:
-    icon = Gtk.StatusIcon()
-    icon.set_from_icon_name("bodhi-update-manager")
-    icon.set_tooltip_text("Bodhi Update Manager")
-    icon.set_visible(True)
+        show_item = Gtk.MenuItem(label="Show / Hide")
+        show_item.connect("activate", lambda _: self._toggle_window())
+        menu.append(show_item)
 
-    menu = _build_menu()
+        refresh_item = Gtk.MenuItem(label="Check for Updates")
+        refresh_item.connect("activate", lambda _: self._check_updates())
+        menu.append(refresh_item)
 
-    # Left-click: open the main app.
-    icon.connect("activate", lambda _: _open_update_manager())
+        menu.append(Gtk.SeparatorMenuItem())
 
-    # Right-click: show the context menu.
-    def on_popup(status_icon: Gtk.StatusIcon, button: int, time: int) -> None:
-        menu.popup(None, None, Gtk.StatusIcon.position_menu, status_icon, button, time)
+        quit_item = Gtk.MenuItem(label="Quit")
+        quit_item.connect("activate", lambda _: self._quit())
+        menu.append(quit_item)
 
-    icon.connect("popup-menu", on_popup)
+        menu.show_all()
+        return menu
 
-    Gtk.main()
+    # ------------------------------------------------------------------
+    # Actions
+    # ------------------------------------------------------------------
 
+    def _toggle_window(self) -> None:
+        win = self._window
+        if win.get_visible():
+            win.hide()
+        else:
+            win.show_all()
+            win.present()
 
-if __name__ == "__main__":
-    main()
+    def _check_updates(self) -> None:
+        win = self._window
+        if not win.get_visible():
+            win.show_all()
+            win.present()
+        win.on_check_updates(None)
+
+    def _quit(self) -> None:
+        app = self._window.get_application()
+        if app is not None:
+            app.quit()
+        else:
+            Gtk.main_quit()
+
+    # ------------------------------------------------------------------
+    # StatusIcon popup helper
+    # ------------------------------------------------------------------
+
+    def _on_status_icon_popup(
+        self, status_icon: Gtk.StatusIcon, button: int, time: int
+    ) -> None:
+        self._menu.popup(
+            None,
+            None,
+            Gtk.StatusIcon.position_menu,
+            status_icon,
+            button,
+            time,
+        )
+
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
+    def destroy(self) -> None:
+        """Remove the tray icon."""
+        if self._status_icon is not None:
+            self._status_icon.set_visible(False)
+            self._status_icon = None
+        if self._indicator is not None:
+            self._indicator.set_status(_AppIndicator.IndicatorStatus.PASSIVE)
+            self._indicator = None

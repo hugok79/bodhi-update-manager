@@ -64,7 +64,6 @@ class UpdateManagerWindow(Gtk.Window):
         self.set_default_size(1100, 700)
         self.set_icon_name("bodhi-update-manager")
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect("destroy", Gtk.main_quit)
 
         self.refresh_in_progress = False
         self.install_in_progress = False
@@ -159,7 +158,7 @@ class UpdateManagerWindow(Gtk.Window):
         file_menu.append(Gtk.SeparatorMenuItem())
 
         quit_item = Gtk.MenuItem(label=_("Quit"))
-        quit_item.connect("activate", lambda _: Gtk.main_quit())
+        quit_item.connect("activate", lambda _: self.get_application().quit())
         file_menu.append(quit_item)
 
         menubar.append(file_item)
@@ -1155,9 +1154,11 @@ class UpdateManagerWindow(Gtk.Window):
             self._spawn_install_command(guarded_argv)
             self._auth_poll_source_id = GLib.timeout_add(100, self._poll_auth_sentinel)
         else:
-            # sudo/doas: auth happens inside the VTE — reveal it immediately.
+            # sudo/doas: auth happens inside the VTE — reveal it immediately,
+            # then transition to RUNNING right away (no marker needed).
             self._spawn_install_command(argv)
             self._handle_terminal_auth_fallback()
+            GLib.idle_add(self._mark_install_running)
 
     def _launch_deb_install(self, deb_path: str) -> None:
         """Switch to the install screen and install a local .deb file."""
@@ -1249,30 +1250,9 @@ class UpdateManagerWindow(Gtk.Window):
     # Signal handlers                                                      #
     # ------------------------------------------------------------------ #
 
-    # Stdout marker emitted by the root helper for the sudo/doas auth path.
-    # AUTH_PENDING remains active until this string is seen in PTY output.
-    _INSTALL_STARTED_MARKER = "UPDATE_MANAGER_INSTALL_STARTED"
-
     def on_install_terminal_contents_changed(self, _terminal: Vte.Terminal) -> None:
-        """Watch for the auth-success marker from the root helper (sudo/doas only).
-
-        For pkexec: auth is detected by the sentinel file poller; this callback
-        returns immediately when the active tool is pkexec.
-
-        For sudo/doas: the root helper prints "UPDATE_MANAGER_INSTALL_STARTED" to stdout
-        immediately before launching apt-get.  That marker is the sole trigger
-        for AUTH_PENDING → RUNNING on the terminal-auth path.  All earlier PTY
-        content (password prompts etc.) is ignored until the marker appears.
-        """
-        if not self.install_in_progress:
-            return
-        if self.install_state != "AUTH_PENDING":
-            return
-        if self._active_privilege_tool == "pkexec":
-            return
-
-        if self._INSTALL_STARTED_MARKER in self._terminal_text():
-            self._mark_install_running()
+        """VTE contents-changed signal handler (reserved for future use)."""
+        pass
 
     def on_toggle_selected(self, _renderer: Gtk.CellRendererToggle, path: str) -> None:
         if self.refresh_in_progress or self.install_in_progress:
@@ -1420,13 +1400,72 @@ class UpdateManagerWindow(Gtk.Window):
             self._finish_install_failure(status)
 
 
+
+class UpdateManagerApplication(Gtk.Application):
+    """Single-instance GTK application that owns one window and one tray icon.
+
+    Launching a second copy raises the existing window instead of creating
+    a duplicate.  The tray indicator (when active) operates on the same
+    shared window rather than spawning another process.
+    """
+
+    def __init__(self, *, tray_mode: bool = False, deb_path: str | None = None) -> None:
+        super().__init__(application_id="org.bodhi.UpdateManager")
+        self._tray_mode = tray_mode
+        self._deb_path = deb_path
+        self._window: UpdateManagerWindow | None = None
+        self._tray = None
+
+    # ------------------------------------------------------------------
+    # Gtk.Application overrides
+    # ------------------------------------------------------------------
+
+    def do_activate(self) -> None:  # type: ignore[override]
+        """Create the window on first activation; present it on subsequent ones."""
+        if self._window is None:
+            self._window = UpdateManagerWindow(deb_path=self._deb_path)
+            self._window.set_application(self)
+
+            # Intercept the window-close button: hide instead of destroying
+            # so tray mode continues to work after the user closes the window.
+            self._window.connect("delete-event", self._on_window_delete)
+
+            if self._tray_mode:
+                from bodhi_update.tray import TrayIcon  # noqa: PLC0415
+                self._tray = TrayIcon(self._window)
+                # Start hidden; tray menu will show/hide as needed.
+                self._window.show_all()
+                self._window.hide()
+            else:
+                self._window.show_all()
+        else:
+            # Second activation (another launch attempt or tray menu action).
+            self._window.present()
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _on_window_delete(self, _win: Gtk.Window, _event: object) -> bool:
+        """Hide instead of destroy when a tray is active; destroy otherwise."""
+        if self._tray is not None:
+            self._window.hide()
+            return True  # Suppress default destroy
+        return False  # Let default destroy proceed → app exits
+
+
 def main() -> None:
+    import argparse  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(prog="bodhi-update-manager", add_help=True)
+    parser.add_argument("--tray", action="store_true", help="Start with window hidden, tray only")
+    parser.add_argument("file", nargs="?", default=None, help="Optional .deb file to install")
+    args = parser.parse_args()
+
     deb_path: str | None = None
+    if args.file and args.file.lower().endswith(".deb"):
+        deb_path = args.file
 
-    if len(sys.argv) > 1:
-        arg = sys.argv[1]
-        if arg.lower().endswith(".deb"):
-            deb_path = arg
+    app = UpdateManagerApplication(tray_mode=args.tray, deb_path=deb_path)
+    app.run([])
 
-    UpdateManagerWindow(deb_path=deb_path)
-    Gtk.main()
