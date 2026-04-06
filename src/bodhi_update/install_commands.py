@@ -23,8 +23,11 @@ _INSTALLED_HELPER = "/usr/libexec/bodhi-update-manager-root"
 # reached by walking two levels up from src/bodhi_update/ to the repo root.
 _DEV_HELPER = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),  # src/bodhi_update/
-    "..", "..",                                   # → repo root
-    "data", "libexec", "bodhi-update-manager-root",
+    "..",
+    "..",  # → repo root
+    "data",
+    "libexec",
+    "bodhi-update-manager-root",
 )
 
 
@@ -56,6 +59,7 @@ def _privilege_tool() -> str:
 # ---------------------------------------------------------------------------
 # APT argv builders  (no shell — direct exec)
 # ---------------------------------------------------------------------------
+
 
 def build_upgrade_argv(packages: list[str] | None = None) -> list[str]:
     """Return the argv for an APT upgrade (or targeted install) via the helper.
@@ -92,16 +96,18 @@ def build_deb_install_argv(deb_path: str) -> list[str]:
         raise ValueError(f"Not a .deb file: {deb_path}")
 
     if not os.path.isfile(norm_path):
-        raise FileNotFoundError(f"File not found or not a regular file: {deb_path}")
+        raise FileNotFoundError(
+            f"File not found or not a regular file: {deb_path}")
 
     tool = _privilege_tool()
     helper = get_helper_path()
     return [tool, helper, "install-deb", norm_path]
 
 
-def build_hold_argv(
-    package: str, *, hold: bool, sentinel_path: str | None = None
-) -> list[str]:
+def build_hold_argv(package: str,
+                    *,
+                    hold: bool,
+                    sentinel_path: str | None = None) -> list[str]:
     """Return the argv for hold or unhold of a single APT package via the helper.
 
     Args:

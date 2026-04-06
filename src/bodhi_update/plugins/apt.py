@@ -19,7 +19,6 @@ from bodhi_update.models import (
 )
 from bodhi_update.utils import find_privilege_tool
 
-
 # APT/dpkg lock files whose open FileDescriptions indicate a busy package system.
 _LOCK_PATHS = (
     Path("/var/lib/dpkg/lock"),
@@ -61,10 +60,10 @@ _NETWORK_ERROR_HINTS = (
     "they have been ignored, or old ones used instead",
 )
 
-
 # ------------------------------------------------------------------ #
 # Internal /proc helpers                                               #
 # ------------------------------------------------------------------ #
+
 
 def _proc_comm(pid: str) -> str:
     """Return the comm (process name) for *pid*, stripped.  '' on error."""
@@ -80,7 +79,8 @@ def _proc_cmdline(pid: str) -> str:
     try:
         with open(f"/proc/{pid}/cmdline", "rb") as fh:
             raw = fh.read()
-        return raw.replace(b"\x00", b" ").decode("utf-8", errors="replace").strip()
+        return raw.replace(b"\x00", b" ").decode("utf-8",
+                                                 errors="replace").strip()
     except OSError:
         return ""
 
@@ -101,6 +101,7 @@ def _matches_apt_keyword(comm: str, cmdline: str) -> bool:
 # Package helpers                                                      #
 # ------------------------------------------------------------------ #
 
+
 def _get_origin_name(pkg: apt.package.Package) -> str:
     """Return a compact archive/origin label for a candidate package."""
     if pkg.candidate and pkg.candidate.origins:
@@ -117,7 +118,8 @@ def _is_security_update(origin: str) -> bool:
 
 def _is_kernel_update(pkg_name: str) -> bool:
     """Return True if the package is a common kernel or kernel-module package."""
-    return pkg_name.startswith(("linux-image", "linux-headers", "linux-modules"))
+    return pkg_name.startswith(
+        ("linux-image", "linux-headers", "linux-modules"))
 
 
 def _determine_category(pkg_name: str, origin: str) -> str:
@@ -137,6 +139,7 @@ def _sort_key(item: UpdateItem) -> tuple[int, str]:
 # ------------------------------------------------------------------ #
 # APT constraint helpers                                               #
 # ------------------------------------------------------------------ #
+
 
 def _get_held_packages() -> set[str]:
     """Return the set of package names pinned via ``apt-mark hold``.
@@ -283,7 +286,10 @@ def _output_mentions_network_error(text: str) -> bool:
 # AptBackend Class Definition                                          #
 # ------------------------------------------------------------------ #
 
+
 class AptBackend(UpdateBackend):
+    """Update backend for Debian/Ubuntu APT package management."""
+
     @property
     def backend_id(self) -> str:
         return "apt"
@@ -296,7 +302,8 @@ class AptBackend(UpdateBackend):
         # If python-apt is imported successfully (it is at the top), APT is available.
         return True
 
-    def build_install_command(self, packages: List[str] | None = None) -> list[str]:
+    def build_install_command(self,
+                              packages: List[str] | None = None) -> list[str]:
         """Return a direct argv for privilege-escalated APT install/upgrade.
 
         The returned list is passed straight to VTE spawn_async — no shell
@@ -360,34 +367,14 @@ class AptBackend(UpdateBackend):
 
         return False, ""
 
-    def refresh(self, sentinel_path: str | None = None) -> Tuple[bool, str]:
-        """Run a privileged ``apt-get update`` via the root helper and return ``(success,
-        message)``."""
-        privilege_tool = find_privilege_tool()
-        if privilege_tool is None:
-            return False, "No privilege tool found (pkexec / sudo / doas)."
+    @staticmethod
+    def _parse_refresh_output(
+            result: subprocess.CompletedProcess) -> Tuple[bool, str]:
+        """Interpret a completed apt-get update subprocess result.
 
-        command = [privilege_tool, get_helper_path(), "refresh"]
-        if sentinel_path:
-            # Insert --sentinel before the subcommand so the root helper can
-            # signal auth success to the GUI.
-            command = [privilege_tool, get_helper_path(),
-                       "--sentinel", sentinel_path, "refresh"]
-
-        try:
-            result = subprocess.run(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=120,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            return False, "Package list refresh timed out."
-        except OSError as exc:
-            return False, f"Failed to launch privilege tool: {exc}"
-
+        Returns (success, message) — factors out the multi-return logic from
+        refresh() so that method stays within the 6-return limit.
+        """
         stdout_text = result.stdout or ""
         stderr_text = result.stderr or ""
         combined_output = stdout_text + "\n" + stderr_text
@@ -407,69 +394,94 @@ class AptBackend(UpdateBackend):
         )
         return False, f"Failed to refresh package lists. ({first_err})"
 
+    def refresh(self, sentinel_path: str | None = None) -> Tuple[bool, str]:
+        """Run a privileged ``apt-get update`` via the root helper and return ``(success,
+        message)``."""
+        privilege_tool = find_privilege_tool()
+        if privilege_tool is None:
+            return False, "No privilege tool found (pkexec / sudo / doas)."
+
+        command = [privilege_tool, get_helper_path(), "refresh"]
+        if sentinel_path:
+            # Insert --sentinel before the subcommand so the root helper can
+            # signal auth success to the GUI.
+            command = [
+                privilege_tool,
+                get_helper_path(), "--sentinel", sentinel_path, "refresh"
+            ]
+
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "Package list refresh timed out."
+        except OSError as exc:
+            return False, f"Failed to launch privilege tool: {exc}"
+
+        return self._parse_refresh_output(result)
+
+    @staticmethod
+    def _classify_constraint(
+        pkg_name: str,
+        summary: str,
+        held_names: set,
+        kept_back_names: set,
+    ) -> Tuple[str, str]:
+        """Return (constraint, description) for a single package."""
+        if pkg_name in held_names:
+            return CONSTRAINT_HELD, summary
+        if pkg_name in kept_back_names:
+            return CONSTRAINT_BLOCKED, "Blocked by held package or dependency constraints"
+        return CONSTRAINT_NORMAL, summary
+
+    @staticmethod
+    def _build_update_item(
+        pkg: apt.package.Package,
+        held_names: set,
+        kept_back_names: set,
+    ) -> Tuple["UpdateItem", str]:
+        """Build an UpdateItem and return (item, constraint) for one upgradable package."""
+        installed_version = pkg.installed.version if pkg.installed else "unknown"
+        candidate_version = pkg.candidate.version if pkg.candidate else "unknown"
+        size = pkg.candidate.size if pkg.candidate else 0
+        origin = _get_origin_name(pkg)
+        summary = pkg.candidate.summary if pkg.candidate else ""
+        constraint, description = AptBackend._classify_constraint(
+            pkg.name, summary, held_names, kept_back_names)
+        category = _determine_category(pkg.name, origin)
+        return UpdateItem(
+            name=pkg.name,
+            installed_version=installed_version,
+            candidate_version=candidate_version,
+            size=size,
+            origin=origin,
+            backend="apt",
+            category=category,
+            description=description,
+            constraint=constraint,
+        ), constraint
+
     def get_updates(self) -> Tuple[List[UpdateItem], int]:
-        """Read the local APT cache and return ``(updates, total_download_bytes)``.
-
-        Each ``UpdateItem`` receives one of three constraint states:
-
-        * ``CONSTRAINT_HELD``    – pinned via ``apt-mark hold``
-        * ``CONSTRAINT_BLOCKED`` – kept back by APT because of a held dependency
-        * ``CONSTRAINT_NORMAL``  – eligible for upgrade
-
-        Held packages are excluded from the ``total_bytes`` download total
-        (preserving previous behaviour).
-
-        Blocked packages always use a generic description string; no dependency
-        resolution is attempted.
-        """
-        # Query APT constraint state once for the whole call.
+        """Read the local APT cache and return ``(updates, total_download_bytes)``."""
         held_names = _get_held_packages()
         kept_back_names = _get_kept_back_packages()
-
         cache = apt.Cache()
         cache.open()
-
         updates: List[UpdateItem] = []
         total_bytes = 0
-
         for pkg in cache:
             if not (pkg.is_installed and pkg.is_upgradable):
                 continue
-
-            installed_version = pkg.installed.version if pkg.installed else "unknown"
-            candidate_version = pkg.candidate.version if pkg.candidate else "unknown"
-            size = pkg.candidate.size if pkg.candidate else 0
-            origin = _get_origin_name(pkg)
-            summary = pkg.candidate.summary if pkg.candidate else ""
-
-            if pkg.name in held_names:
-                constraint = CONSTRAINT_HELD
-                description = summary
-            elif pkg.name in kept_back_names:
-                constraint = CONSTRAINT_BLOCKED
-                description = "Blocked by held package or dependency constraints"
-            else:
-                constraint = CONSTRAINT_NORMAL
-                description = summary
-
-            category = _determine_category(pkg.name, origin)
-
-            item = UpdateItem(
-                name=pkg.name,
-                installed_version=installed_version,
-                candidate_version=candidate_version,
-                size=size,
-                origin=origin,
-                backend="apt",
-                category=category,
-                description=description,
-                constraint=constraint,
-            )
-
+            item, constraint = self._build_update_item(pkg, held_names,
+                                                       kept_back_names)
             updates.append(item)
             if constraint != CONSTRAINT_HELD:
-                total_bytes += size
-
+                total_bytes += item.size
         updates.sort(key=_sort_key)
         return updates, total_bytes
-

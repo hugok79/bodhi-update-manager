@@ -53,7 +53,8 @@ class UpdateBackend(ABC):
         return [], 0
 
     @abstractmethod
-    def build_install_command(self, packages: List[str] | None = None) -> list[str]:
+    def build_install_command(self,
+                              packages: List[str] | None = None) -> list[str]:
         """Return an argv list required to install the given packages.
 
         If packages is None or empty, return the argv to upgrade all available
@@ -89,12 +90,14 @@ _REGISTRY = BackendRegistry()
 
 
 def get_registry() -> BackendRegistry:
+    """Return the module-level backend registry singleton."""
     return _REGISTRY
 
 
 # ------------------------------------------------------------------ #
 # Plugin discovery                                                     #
 # ------------------------------------------------------------------ #
+
 
 def _is_valid_backend_class(obj: object, module_name: str) -> bool:
     """Return True if *obj* is a concrete UpdateBackend subclass defined in *module_name*.
@@ -152,7 +155,7 @@ def discover_plugins() -> List[type[UpdateBackend]]:
         module_name = f"bodhi_update.plugins.{stem}"
         try:
             module = importlib.import_module(module_name)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
             _log.debug("Skipping plugin %r: %s", module_name, exc)
             continue
 
@@ -170,6 +173,7 @@ def discover_plugins() -> List[type[UpdateBackend]]:
 # ------------------------------------------------------------------ #
 # Registry initialisation                                             #
 # ------------------------------------------------------------------ #
+
 
 def initialize_registry() -> None:
     """Discover and register all available backend plugins.
@@ -198,7 +202,7 @@ def initialize_registry() -> None:
                 continue
             reg.register(instance)
             _log.debug("Registered backend: %r", bid)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
             _log.warning(
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,
@@ -206,7 +210,5 @@ def initialize_registry() -> None:
             )
 
     if reg.get_backend("apt") is None:
-        _log.warning(
-            "APT backend was not registered. "
-            "Package updates may be unavailable."
-        )
+        _log.warning("APT backend was not registered. "
+                     "Package updates may be unavailable.")

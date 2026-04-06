@@ -2,7 +2,7 @@
 
 Owns exactly one tray icon per application instance.  All menu actions
 lazily create the UpdateManagerWindow on first use via the application's
-_get_or_create_window() helper — the window is never pre-created in tray
+get_or_create_window() helper — the window is never pre-created in tray
 mode, so GTK cannot implicitly show it at startup.
 
 Indicator backend priority:
@@ -22,29 +22,29 @@ import gi
 
 gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("Gtk", "3.0")
+
+# ---------------------------------------------------------------------------
+# AppIndicator backend detection (must come after gi.require_version calls)
+# ---------------------------------------------------------------------------
+
+_APP_INDICATOR = None  # type: ignore[assignment]  # pylint: disable=invalid-name
+try:
+    gi.require_version("AyatanaAppIndicator3", "0.1")
+    from gi.repository import AyatanaAppIndicator3 as _APP_INDICATOR  # type: ignore[assignment]
+except (ValueError, ImportError):
+    pass
+
+if _APP_INDICATOR is None:
+    try:
+        gi.require_version("AppIndicator3", "0.1")
+        from gi.repository import AppIndicator3 as _APP_INDICATOR  # type: ignore[assignment]
+    except (ValueError, ImportError):
+        pass
+
 from gi.repository import GdkPixbuf, GLib, Gtk  # noqa: E402
 
 if TYPE_CHECKING:
     from bodhi_update.app import UpdateManagerApplication
-
-# ---------------------------------------------------------------------------
-# AppIndicator backend detection
-# ---------------------------------------------------------------------------
-
-_AppIndicator = None
-try:
-    gi.require_version("AyatanaAppIndicator3", "0.1")
-    from gi.repository import AyatanaAppIndicator3 as _AppIndicator  # type: ignore[assignment]
-except (ValueError, ImportError):
-    pass
-
-if _AppIndicator is None:
-    try:
-        gi.require_version("AppIndicator3", "0.1")
-        from gi.repository import AppIndicator3 as _AppIndicator  # type: ignore[assignment]
-    except (ValueError, ImportError):
-        pass
-
 
 # ---------------------------------------------------------------------------
 # Badge-dot helper
@@ -52,17 +52,32 @@ if _AppIndicator is None:
 
 # Severity → (fill RGBA, outline RGBA)
 _SEVERITY_COLORS = {
-    "high": ((220, 60, 60, 255), (120, 220, 120, 255)),    # red fill   / green ring
-    "medium": ((246, 195, 66, 255), (120, 220, 120, 255)),  # amber fill / green ring
-    "low": ((80, 210, 230, 255), (120, 220, 120, 255)),     # cyan fill  / green ring
+    "high": (
+        (220, 60, 60, 255), (120, 220, 120, 255)),  # red fill   / green ring
+    "medium": (
+        (246, 195, 66, 255), (120, 220, 120, 255)),  # amber fill / green ring
+    "low": (
+        (80, 210, 230, 255), (120, 220, 120, 255)),  # cyan fill  / green ring
 }
 
 # APT package name prefixes that warrant amber (medium) severity.
 # Keep this list intentionally small: core platform plumbing only.
 _MEDIUM_PREFIXES = (
-    "linux-", "systemd", "libc", "glibc", "dbus", "openssl",
-    "gnupg", "apt", "dpkg", "bash", "coreutils", "util-linux",
-    "sudo", "moksha", "bodhi-",
+    "linux-",
+    "systemd",
+    "libc",
+    "glibc",
+    "dbus",
+    "openssl",
+    "gnupg",
+    "apt",
+    "dpkg",
+    "bash",
+    "coreutils",
+    "util-linux",
+    "sudo",
+    "moksha",
+    "bodhi-",
 )
 
 
@@ -78,7 +93,8 @@ def _pkg_severity(name: str, category: str, backend: str) -> str:
 def _read_pref(key: str, default: bool = True) -> bool:
     """Read a single boolean preference from the shared prefs file."""
     try:
-        config_home = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+        config_home = os.environ.get("XDG_CONFIG_HOME",
+                                     os.path.expanduser("~/.config"))
         path = os.path.join(config_home, "bodhi-update-manager", "prefs.json")
         with open(path, "r", encoding="utf-8") as f:
             return bool(json.load(f).get(key, default))
@@ -86,40 +102,50 @@ def _read_pref(key: str, default: bool = True) -> bool:
         return default
 
 
-def _add_badge_dot(pixbuf: GdkPixbuf.Pixbuf, severity: str = "medium") -> GdkPixbuf.Pixbuf:
+def _write_pixel(pixels: bytearray, p: int, color: tuple,
+                 n_channels: int) -> None:
+    """Write a single RGBA (or RGB) pixel at byte offset *p*."""
+    pixels[p] = color[0]
+    pixels[p + 1] = color[1]
+    pixels[p + 2] = color[2]
+    if n_channels == 4:
+        pixels[p + 3] = color[3]
+
+
+def _badge_dot_geometry(width: int) -> tuple:
+    """Return (radius, cx, cy, r2_outer, r2_inner) for the badge dot."""
+    radius = max(2, width // 12)
+    cx = width - radius - 1
+    cy = radius + 1
+    r2_outer = (radius + 1) * (radius + 1)
+    r2_inner = radius * radius
+    return radius, cx, cy, r2_outer, r2_inner
+
+
+def _add_badge_dot(  # pylint: disable=too-many-locals
+        pixbuf: GdkPixbuf.Pixbuf,
+        severity: str = "medium") -> GdkPixbuf.Pixbuf:
     """Draw a small status dot in the top-right corner. Color reflects severity."""
     fill, outline = _SEVERITY_COLORS.get(severity, _SEVERITY_COLORS["medium"])
 
     width = pixbuf.get_width()
     height = pixbuf.get_height()
-
     pixels = bytearray(pixbuf.get_pixels())
     rowstride = pixbuf.get_rowstride()
     n_channels = pixbuf.get_n_channels()
 
-    radius = max(2, width // 12)
-    cx = width - radius - 1
-    cy = radius + 1
-
-    outline_r2_outer = (radius + 1) * (radius + 1)
-    outline_r2_inner = radius * radius
+    _radius, cx, cy, r2_outer, r2_inner = _badge_dot_geometry(width)
 
     for y in range(height):
         for x in range(width):
             dx = x - cx
             dy = y - cy
             dist2 = dx * dx + dy * dy
-
-            if dist2 > outline_r2_outer:
+            if dist2 > r2_outer:
                 continue
-
             p = y * rowstride + x * n_channels
-            color = outline if dist2 > outline_r2_inner else fill
-            pixels[p] = color[0]
-            pixels[p + 1] = color[1]
-            pixels[p + 2] = color[2]
-            if n_channels == 4:
-                pixels[p + 3] = color[3]
+            color = outline if dist2 > r2_inner else fill
+            _write_pixel(pixels, p, color, n_channels)
 
     return GdkPixbuf.Pixbuf.new_from_bytes(
         GLib.Bytes.new(bytes(pixels)),
@@ -136,6 +162,7 @@ def _add_badge_dot(pixbuf: GdkPixbuf.Pixbuf, severity: str = "medium") -> GdkPix
 # Tray implementation
 # ---------------------------------------------------------------------------
 
+
 class TrayIcon:
     """System-tray icon whose actions operate on the application's window.
 
@@ -150,12 +177,13 @@ class TrayIcon:
 
     # Background poll interval (seconds).
     _POLL_INTERVAL = 15 * 60  # 15 minutes
-    _INITIAL_DELAY = 5        # seconds after startup before first check
+    _INITIAL_DELAY = 5  # seconds after startup before first check
 
     def __init__(self, app: "UpdateManagerApplication") -> None:
+        """Initialise the tray icon and schedule the first background poll."""
         self._app = app
         self._status_icon = None  # Gtk.StatusIcon handle (preferred)
-        self._indicator = None    # AppIndicator3 handle (fallback)
+        self._indicator = None  # AppIndicator3 handle (fallback)
         self._poll_source_id: int | None = None
 
         menu = self._build_menu()
@@ -173,13 +201,14 @@ class TrayIcon:
             self._menu = menu  # keep menu alive as long as the icon is alive
         except Exception:  # pylint: disable=broad-except
             # StatusIcon unavailable (e.g. Wayland-only compositor); try AppIndicator.
-            if _AppIndicator is not None:
-                self._indicator = _AppIndicator.Indicator.new(
+            if _APP_INDICATOR is not None:
+                self._indicator = _APP_INDICATOR.Indicator.new(
                     self._ICON_NAME,
                     self._ICON_NAME,
-                    _AppIndicator.IndicatorCategory.APPLICATION_STATUS,
+                    _APP_INDICATOR.IndicatorCategory.APPLICATION_STATUS,
                 )
-                self._indicator.set_status(_AppIndicator.IndicatorStatus.ACTIVE)
+                self._indicator.set_status(
+                    _APP_INDICATOR.IndicatorStatus.ACTIVE)
                 self._indicator.set_menu(menu)
 
         # Schedule an initial badge check shortly after startup, then periodically.
@@ -190,6 +219,7 @@ class TrayIcon:
     # ------------------------------------------------------------------
 
     def _build_menu(self) -> Gtk.Menu:
+        """Build and return the right-click tray context menu."""
         menu = Gtk.Menu()
 
         show_item = Gtk.MenuItem(label="Show / Hide")
@@ -215,12 +245,13 @@ class TrayIcon:
 
     def _show_window(self) -> None:
         """Lazily create the window (if needed) and make it visible."""
-        win = self._app._get_or_create_window()
+        win = self._app.get_or_create_window()
         win.show_all()
         win.present()
 
     def _toggle_window(self) -> None:
-        win = self._app._get_or_create_window()
+        """Toggle window visibility."""
+        win = self._app.get_or_create_window()
         if win.get_visible():
             win.hide()
         else:
@@ -228,25 +259,24 @@ class TrayIcon:
             win.present()
 
     def _check_updates(self) -> None:
-        win = self._app._get_or_create_window()
+        """Show the window and trigger an update check."""
+        win = self._app.get_or_create_window()
         if not win.get_visible():
             win.show_all()
             win.present()
         win.on_check_updates(None)
 
     def _quit(self) -> None:
-        if self._app._held_for_tray:
-            self._app._held_for_tray = False
-            self._app.release()
-        self._app.quit()
+        """Quit the application, releasing the hold() if in tray-only mode."""
+        self._app.quit_from_tray()
 
     # ------------------------------------------------------------------
     # StatusIcon popup helper
     # ------------------------------------------------------------------
 
-    def _on_status_icon_popup(
-        self, status_icon: Gtk.StatusIcon, button: int, time: int
-    ) -> None:
+    def _on_status_icon_popup(self, status_icon: Gtk.StatusIcon, button: int,
+                              time: int) -> None:
+        """Show context menu at the StatusIcon position."""
         self._menu.popup(
             None,
             None,
@@ -265,9 +295,8 @@ class TrayIcon:
         if _read_pref("show_notifications"):
             threading.Thread(target=self._poll_worker, daemon=True).start()
         # Re-arm after _POLL_INTERVAL; use a one-shot source that reschedules itself.
-        self._poll_source_id = GLib.timeout_add_seconds(
-            self._POLL_INTERVAL, self._on_poll_timer
-        )
+        self._poll_source_id = GLib.timeout_add_seconds(self._POLL_INTERVAL,
+                                                        self._on_poll_timer)
         return False  # remove the current one-shot source
 
     def _poll_worker(self) -> None:
@@ -354,5 +383,5 @@ class TrayIcon:
             self._status_icon.set_visible(False)
             self._status_icon = None
         if self._indicator is not None:
-            self._indicator.set_status(_AppIndicator.IndicatorStatus.PASSIVE)
+            self._indicator.set_status(_APP_INDICATOR.IndicatorStatus.PASSIVE)
             self._indicator = None

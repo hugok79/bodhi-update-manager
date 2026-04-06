@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import shutil
 
-
 REBOOT_REQUIRED_PATH = "/var/run/reboot-required"
 
 # Privilege tools tried in preference order.

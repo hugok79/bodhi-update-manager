@@ -1,3 +1,5 @@
+"""Flatpak-backed update discovery for the Bodhi Update Manager."""
+
 import shutil
 import subprocess
 from typing import Dict, List, Tuple
@@ -12,6 +14,8 @@ _LS_COLS = "application,branch,origin"
 
 
 class FlatpakBackend(UpdateBackend):
+    """Update backend that queries installed Flatpak applications."""
+
     @property
     def backend_id(self) -> str:
         return "flatpak"
@@ -76,8 +80,10 @@ class FlatpakBackend(UpdateBackend):
         Returns list of (app_id, branch, origin) tuples.
         """
         out = self._run(
-            ["flatpak", scope_flag, "remote-ls", "--updates",
-             f"--columns={_LS_COLS}"],
+            [
+                "flatpak", scope_flag, "remote-ls", "--updates",
+                f"--columns={_LS_COLS}"
+            ],
             timeout=30,
         )
         return self._parse_ls_output(out)
@@ -164,12 +170,12 @@ class FlatpakBackend(UpdateBackend):
                     backend="flatpak",
                     category="flatpak",
                     description="Flatpak package",
-                )
-            )
+                ))
 
         return updates, 0
 
-    def build_install_command(self, packages: List[str] | None = None) -> list[str]:
+    def build_install_command(self,
+                              packages: List[str] | None = None) -> list[str]:
         if not packages:
             discovered, _ = self.get_updates()
             packages = [item.name for item in discovered]

@@ -1,3 +1,6 @@
+"""Snap-backed update discovery for the Bodhi Update Manager."""
+
+# pylint: disable=duplicate-code  # build_install_command mirrors flatpak; required by ABC contract
 import shutil
 import subprocess
 from typing import Dict, List, Tuple
@@ -7,6 +10,8 @@ from bodhi_update.models import UpdateItem
 
 
 class SnapBackend(UpdateBackend):
+    """Update backend that queries installed Snap packages."""
+
     @property
     def backend_id(self) -> str:
         return "snap"
@@ -35,7 +40,8 @@ class SnapBackend(UpdateBackend):
             if result.returncode != 0:
                 return False
             # Paranoia: stderr containing daemon-unavailable text is a hard fail.
-            stderr_text = (result.stderr or b"").decode(errors="replace").lower()
+            stderr_text = (result.stderr or
+                           b"").decode(errors="replace").lower()
             return "cannot connect" not in stderr_text
         except (OSError, subprocess.TimeoutExpired):
             return False
@@ -136,12 +142,12 @@ class SnapBackend(UpdateBackend):
                     backend="snap",
                     category="snap",
                     description="Snap package",
-                )
-            )
+                ))
 
         return updates, 0
 
-    def build_install_command(self, packages: List[str] | None = None) -> list[str]:
+    def build_install_command(self,
+                              packages: List[str] | None = None) -> list[str]:
         if not packages:
             discovered, _ = self.get_updates()
             packages = [item.name for item in discovered]

@@ -1,7 +1,9 @@
 """GTK3 GUI for the Update Manager with embedded VTE install view."""
 
+# pylint: disable=too-many-lines  # UpdateManagerWindow is one cohesive GTK class
 from __future__ import annotations
 
+import gettext
 import json
 import logging
 import os
@@ -12,6 +14,13 @@ from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 log = logging.getLogger("bodhi-update-manager")
+
+APP_NAME = "bodhi-update-manager"
+
+gettext.bindtextdomain(APP_NAME, "/usr/share/locale")
+gettext.textdomain(APP_NAME)
+_ = gettext.gettext
+ngettext = gettext.ngettext
 
 # gi.require_version() must be called before any gi.repository imports.
 import gi  # noqa: E402
@@ -30,19 +39,6 @@ from bodhi_update.models import (  # noqa: E402
 from bodhi_update.utils import (  # noqa: E402
     find_privilege_tool, format_size, reboot_required,
 )
-
-# Localization with gettext
-
-import gettext  # noqa: E402
-
-APP_NAME = "bodhi-update-manager"
-LOCALE_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "locale")
-
-gettext.bindtextdomain(APP_NAME, "/usr/share/locale")
-gettext.textdomain(APP_NAME)
-_ = gettext.gettext
-ngettext = gettext.ngettext
 
 ABOUT_TEXT = _(
     """Update Manager
@@ -66,7 +62,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 )
 
 
-class UpdateManagerWindow(Gtk.Window):
+class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attributes
+    """Main application window: update list, install screen, preferences, and tray hooks."""
+
     COL_SELECTED = 0
     COL_PACKAGE = 1
     COL_INSTALLED = 2
@@ -165,9 +163,8 @@ class UpdateManagerWindow(Gtk.Window):
             self.install_details_revealer.set_reveal_child(False)
             self.reboot_info_bar.hide()
             self._set_updates_loading(True)
-            threading.Thread(
-                target=self._load_cached_updates_on_startup, daemon=True
-            ).start()
+            threading.Thread(target=self._load_cached_updates_on_startup,
+                             daemon=True).start()
 
         return False
 
@@ -324,7 +321,8 @@ class UpdateManagerWindow(Gtk.Window):
 
         self.outer_box.pack_start(self.stack, True, True, 0)
 
-    def _build_updates_page(self) -> None:
+    def _build_updates_page(self) -> None:  # pylint: disable=too-many-statements
+        """Build the updates list page (treeview + loading stack)."""
         self.updates_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                     spacing=0)
         self.updates_page.set_hexpand(True)
@@ -366,9 +364,8 @@ class UpdateManagerWindow(Gtk.Window):
         toggle_column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         toggle_column.set_fixed_width(90)
         # Hide the checkbox for held/blocked rows — they are non-actionable.
-        toggle_column.set_cell_data_func(
-            toggle_renderer, self._toggle_cell_data_func
-        )
+        toggle_column.set_cell_data_func(toggle_renderer,
+                                         self._toggle_cell_data_func)
         self.tree.append_column(toggle_column)
 
         # Package column — always uses Pango markup so the name stays bold.
@@ -419,7 +416,8 @@ class UpdateManagerWindow(Gtk.Window):
 
         # Nested stack: "loading" vs "list".
         self.updates_stack = Gtk.Stack()
-        self.updates_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.updates_stack.set_transition_type(
+            Gtk.StackTransitionType.CROSSFADE)
         self.updates_stack.set_transition_duration(150)
         self.updates_stack.set_hexpand(True)
         self.updates_stack.set_vexpand(True)
@@ -438,7 +436,8 @@ class UpdateManagerWindow(Gtk.Window):
 
         self.install_title_label = Gtk.Label()
         self.install_title_label.set_xalign(0.0)
-        self.install_title_label.set_markup("<b>%s</b>" % _("Installing updates..."))
+        self.install_title_label.set_markup(
+            f"<b>{_('Installing updates...')}</b>")
         self.install_page.pack_start(self.install_title_label, False, False, 0)
 
         self.install_phase_label = Gtk.Label()
@@ -504,7 +503,7 @@ class UpdateManagerWindow(Gtk.Window):
     # Dialogs                                                              #
     # ------------------------------------------------------------------ #
 
-    def _show_preferences_dialog(self) -> None:
+    def _show_preferences_dialog(self) -> None:  # pylint: disable=too-many-statements
         dialog = Gtk.Dialog(
             title=_("Preferences"),
             transient_for=self,
@@ -555,9 +554,8 @@ class UpdateManagerWindow(Gtk.Window):
                 changed = True
                 if not new_notif:
                     _app = self.get_application()
-                    if _app is not None and getattr(_app, "_tray",
-                                                    None) is not None:
-                        _app._tray.set_update_count(0)
+                    if _app is not None and hasattr(_app, "set_tray_count"):
+                        _app.set_tray_count(0)
 
             new_held = held_check.get_active()
             if self.prefs.get("show_held_packages", False) != new_held:
@@ -813,8 +811,7 @@ class UpdateManagerWindow(Gtk.Window):
             screen = Gdk.Screen.get_default()
             if screen is not None:
                 monitor_num = screen.get_primary_monitor()
-                if monitor_num < 0:
-                    monitor_num = 0
+                monitor_num = max(monitor_num, 0)
 
                 workarea = screen.get_monitor_workarea(monitor_num)
                 max_w = max(min_w, workarea.width - margin)
@@ -843,12 +840,9 @@ class UpdateManagerWindow(Gtk.Window):
     def _update_action_sensitivity(self) -> None:
         is_updates = self.stack.get_visible_child_name() == "updates"
         updates_loading = getattr(self, "_updates_loading", False)
-        sensitive = (
-            not self.refresh_in_progress
-            and not self.install_in_progress
-            and not updates_loading
-            and is_updates
-        )
+        sensitive = (not self.refresh_in_progress and
+                     not self.install_in_progress and not updates_loading and
+                     is_updates)
 
         self.check_button.set_sensitive(sensitive)
         self.install_selected_button.set_sensitive(sensitive)
@@ -883,8 +877,8 @@ class UpdateManagerWindow(Gtk.Window):
     def _notify_tray(self, count: int, severity: str = "medium") -> None:
         """Forward update count and severity to the tray icon badge (no-op if no tray)."""
         app = self.get_application()
-        if app is not None and getattr(app, "_tray", None) is not None:
-            app._tray.set_update_count(count, severity)
+        if app is not None and hasattr(app, "set_tray_count"):
+            app.set_tray_count(count, severity)
 
     def _set_install_busy(self, busy: bool) -> None:
         self.install_in_progress = busy
@@ -899,11 +893,12 @@ class UpdateManagerWindow(Gtk.Window):
             }
         self.status_label.set_text(message)
 
-    def _update_count_status(self,
-                             count: int,
-                             total_bytes: int,
-                             *,
-                             cached: bool = False) -> None:
+    def _update_count_status(  # pylint: disable=too-many-locals,too-many-branches
+            self,
+            count: int,
+            total_bytes: int,
+            *,
+            cached: bool = False) -> None:
         if count == 0:
             self._set_status(
                 _("System is up to date. No pending updates in cached package data.")
@@ -948,16 +943,17 @@ class UpdateManagerWindow(Gtk.Window):
             }
         # Append a hint when held/blocked rows are hidden.
         if not self.prefs.get("show_held_packages", False):
-            hidden = sum(
-                1 for row in self.store
-                if row[self.COL_HELD] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED)
-            )
+            hidden = sum(1 for row in self.store
+                         if row[self.COL_HELD] in (CONSTRAINT_HELD,
+                                                   CONSTRAINT_BLOCKED))
             if hidden:
                 hint = ngettext(
                     "%(n)d held/blocked package hidden",
                     "%(n)d held/blocked packages hidden",
                     hidden,
-                ) % {"n": hidden}
+                ) % {
+                    "n": hidden
+                }
                 message = f"{message} · {hint}"
         self._set_status(message)
         # Derive badge severity from the already-populated store (highest wins).
@@ -974,7 +970,7 @@ class UpdateManagerWindow(Gtk.Window):
             if s == "high":
                 severity = "high"
                 break
-            elif s == "medium":
+            if s == "medium":
                 severity = "medium"
         self._notify_tray(actionable_count, severity)
 
@@ -1035,9 +1031,6 @@ class UpdateManagerWindow(Gtk.Window):
     def _on_tree_button_press(self, widget: Gtk.TreeView,
                               event: object) -> bool:
         """Show APT hold/unhold context menu on right-click."""
-        import gi  # noqa: PLC0415
-        gi.require_version("Gdk", "3.0")
-        from gi.repository import Gdk  # noqa: PLC0415
         if event.type != Gdk.EventType.BUTTON_PRESS or event.button != 3:
             return False
         result = widget.get_path_at_pos(int(event.x), int(event.y))
@@ -1049,7 +1042,8 @@ class UpdateManagerWindow(Gtk.Window):
         if row[self.COL_BACKEND] != "apt":
             return False
         self._show_hold_menu(
-            event, row[self.COL_RAW_NAME],
+            event,
+            row[self.COL_RAW_NAME],
             row[self.COL_HELD] == CONSTRAINT_HELD,
         )
         return True
@@ -1069,7 +1063,7 @@ class UpdateManagerWindow(Gtk.Window):
         menu.show_all()
         menu.popup_at_pointer(event)
 
-    def _reload_apt_rows(self) -> None:
+    def _reload_apt_rows(self) -> None:  # pylint: disable=too-many-locals
         """Refresh APT rows only, preserving non-APT rows already in the store."""
         # Snapshot non-APT rows so they survive the store clear.
         non_apt = [
@@ -1116,9 +1110,7 @@ class UpdateManagerWindow(Gtk.Window):
                             for row in self.store
                             if row[self.COL_BACKEND] != "apt")
         actionable = sum(
-            1 for row in self.store
-            if row[self.COL_HELD] == CONSTRAINT_NORMAL
-        )
+            1 for row in self.store if row[self.COL_HELD] == CONSTRAINT_NORMAL)
         self._update_count_status(actionable,
                                   apt_bytes + non_apt_bytes,
                                   cached=True)
@@ -1138,15 +1130,15 @@ class UpdateManagerWindow(Gtk.Window):
         )
         self._hold_sentinel_path: str | None = sentinel
         self._hold_poll_source_id: int | None = GLib.timeout_add(
-            100, self._poll_hold_sentinel, running_msg
-        )
+            100, self._poll_hold_sentinel, running_msg)
 
         self._set_status(_("Waiting for authorization..."))
 
         def _worker() -> None:
-            import subprocess  # noqa: PLC0415
             try:
-                argv = build_hold_argv(pkg_name, hold=hold, sentinel_path=sentinel)
+                argv = build_hold_argv(pkg_name,
+                                       hold=hold,
+                                       sentinel_path=sentinel)
             except RuntimeError as exc:
                 # Command can't be built — no subprocess will run, so the
                 # sentinel will never be written.  Cancel everything.
@@ -1267,9 +1259,7 @@ class UpdateManagerWindow(Gtk.Window):
                           for row in self.store
                           if row[self.COL_HELD] == CONSTRAINT_NORMAL)
         actionable = sum(
-            1 for row in self.store
-            if row[self.COL_HELD] == CONSTRAINT_NORMAL
-        )
+            1 for row in self.store if row[self.COL_HELD] == CONSTRAINT_NORMAL)
         self._update_count_status(actionable, total_bytes, cached=True)
         return False  # one-shot: remove the timeout source
 
@@ -1311,7 +1301,8 @@ class UpdateManagerWindow(Gtk.Window):
         self.store.clear()
 
     @staticmethod
-    def _category_icon(category: str, backend: str,
+    def _category_icon(category: str,
+                       backend: str,
                        constraint: str = CONSTRAINT_NORMAL) -> str:
         """Return GTK symbolic icon name for category/backend/constraint."""
         if constraint == CONSTRAINT_HELD:
@@ -1322,9 +1313,7 @@ class UpdateManagerWindow(Gtk.Window):
             return "security-high-symbolic"
         if category == "kernel":
             return "applications-system-symbolic"
-        if category == "snap" or backend == "snap":
-            return "package-x-generic-symbolic"
-        if category == "flatpak" or backend == "flatpak":
+        if category in ("snap", "flatpak") or backend in ("snap", "flatpak"):
             return "package-x-generic-symbolic"
         return "software-update-available-symbolic"
 
@@ -1375,19 +1364,19 @@ class UpdateManagerWindow(Gtk.Window):
                 )
                 self.store.append(
                     [
-                        False,         # COL_SELECTED
-                        pkg_markup,    # COL_PACKAGE
-                        update.installed_version,   # COL_INSTALLED
-                        update.candidate_version,   # COL_NEW
-                        size_str,      # COL_SIZE
-                        update.origin,              # COL_REPO
-                        update.name,                # COL_RAW_NAME
-                        update.category,            # COL_CATEGORY
-                        update.backend,             # COL_BACKEND
-                        icon,          # COL_ICON
-                        update.size,   # COL_RAW_SIZE
+                        False,  # COL_SELECTED
+                        pkg_markup,  # COL_PACKAGE
+                        update.installed_version,  # COL_INSTALLED
+                        update.candidate_version,  # COL_NEW
+                        size_str,  # COL_SIZE
+                        update.origin,  # COL_REPO
+                        update.name,  # COL_RAW_NAME
+                        update.category,  # COL_CATEGORY
+                        update.backend,  # COL_BACKEND
+                        icon,  # COL_ICON
+                        update.size,  # COL_RAW_SIZE
                         update.description or _("System package"),  # COL_DESC
-                        constraint,    # COL_HELD (constraint state string)
+                        constraint,  # COL_HELD (constraint state string)
                     ]
                 )
         finally:
@@ -1416,7 +1405,8 @@ class UpdateManagerWindow(Gtk.Window):
             except Exception as exc:  # pylint: disable=broad-except
                 error_msgs.append(f"{backend.display_name}: {exc}")
 
-        GLib.idle_add(self._finish_startup_load, updates, total_bytes, error_msgs)
+        GLib.idle_add(self._finish_startup_load, updates, total_bytes,
+                      error_msgs)
 
     def _finish_startup_load(
         self,
@@ -1435,8 +1425,7 @@ class UpdateManagerWindow(Gtk.Window):
         self._populate_store(updates)
         actionable = sum(
             1 for u in updates
-            if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL
-        )
+            if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
         self._update_count_status(actionable, total_bytes, cached=True)
         return False
 
@@ -1462,9 +1451,8 @@ class UpdateManagerWindow(Gtk.Window):
         # If the refresh failed the displayed data comes from the prior cache.
         actionable = sum(
             1 for u in updates
-            if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL
-        )
-        self._update_count_status(actionable, total_bytes, cached=(not ok))
+            if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
+        self._update_count_status(actionable, total_bytes, cached=not ok)
 
         if not ok and message:
             # Append the failure message to the status rather than overwriting the count
@@ -1559,8 +1547,8 @@ class UpdateManagerWindow(Gtk.Window):
             self._auth_poll_source_id = None
         self.stack.set_visible_child_name("install")
 
-        self.install_title_label.set_markup("<b>%s</b>" %
-                                            GLib.markup_escape_text(title))
+        self.install_title_label.set_markup(
+            f"<b>{GLib.markup_escape_text(title)}</b>")
         self.install_phase_label.set_text(_("Waiting for authentication..."))
         self.install_progress.set_fraction(0.0)
         self.install_progress.set_show_text(True)
@@ -1577,7 +1565,7 @@ class UpdateManagerWindow(Gtk.Window):
 
         try:
             self.install_terminal.reset(True, True)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except  # VTE reset may raise on Wayland
             pass
 
     def _mark_install_running(self) -> None:
@@ -1802,7 +1790,7 @@ class UpdateManagerWindow(Gtk.Window):
             result = self.install_terminal.get_text(lambda *a: True, None)
             text = result[0] if isinstance(result, tuple) else result
             return text or ""
-        except Exception:
+        except Exception:  # pylint: disable=broad-except  # VTE get_text API is loosely typed
             return ""
 
     def _on_reboot_bar_response(self, _bar: Gtk.InfoBar,
@@ -1818,7 +1806,8 @@ class UpdateManagerWindow(Gtk.Window):
 
         from bodhi_update.install_commands import get_helper_path  # noqa: PLC0415
         try:
-            subprocess.Popen([privilege_tool, get_helper_path(), "reboot"])
+            subprocess.Popen(  # pylint: disable=consider-using-with
+                [privilege_tool, get_helper_path(), "reboot"])
         except OSError as exc:
             self._set_status(_("Failed to initiate reboot: %(exc)s") % {"exc": exc})
 
@@ -1829,10 +1818,10 @@ class UpdateManagerWindow(Gtk.Window):
     def on_install_terminal_contents_changed(self,
                                              _terminal: Vte.Terminal) -> None:
         """VTE contents-changed signal handler (reserved for future use)."""
-        pass
 
     def on_toggle_selected(self, _renderer: Gtk.CellRendererToggle,
                            path: str) -> None:
+        """Toggle the checkbox for a package row; skip held/blocked packages."""
         if self.refresh_in_progress or self.install_in_progress:
             return
 
@@ -1841,7 +1830,8 @@ class UpdateManagerWindow(Gtk.Window):
         child_iter = self.filter_model.convert_iter_to_child_iter(filter_iter)
 
         # Do not allow selecting held or blocked packages — non-actionable.
-        if self.store[child_iter][self.COL_HELD] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED):
+        if self.store[child_iter][self.COL_HELD] in (CONSTRAINT_HELD,
+                                                     CONSTRAINT_BLOCKED):
             return
 
         current = self.store[child_iter][self.COL_SELECTED]
@@ -1873,6 +1863,7 @@ class UpdateManagerWindow(Gtk.Window):
         self._refresh_selection_status()
 
     def on_category_changed(self, _combo: Gtk.ComboBoxText) -> None:
+        """Refilter the update list when the category combo selection changes."""
         if self.refresh_in_progress or self.install_in_progress:
             return
         self.filter_model.refilter()
@@ -1888,6 +1879,7 @@ class UpdateManagerWindow(Gtk.Window):
         self._set_show_descriptions(checkmenuitem.get_active())
 
     def on_check_updates(self, _button: Gtk.Button | None) -> None:
+        """Trigger a privileged apt-get update and reload the update list."""
         if self.refresh_in_progress or self.install_in_progress:
             return
 
@@ -1912,8 +1904,7 @@ class UpdateManagerWindow(Gtk.Window):
             f"/tmp/bodup-refresh-{os.getpid()}-{random.randint(0, 0xFFFFFF):06x}.ok"
         )
         self._refresh_poll_source_id = GLib.timeout_add(
-            100, self._poll_refresh_sentinel
-        )
+            100, self._poll_refresh_sentinel)
         log.info(_("Starting background refresh for updates."))
 
         worker = threading.Thread(target=self._refresh_worker, daemon=True)
@@ -1953,6 +1944,7 @@ class UpdateManagerWindow(Gtk.Window):
 
     def on_install_selected(self,
                             _button: Gtk.Button | Gtk.MenuItem | None) -> None:
+        """Install all checked packages using the appropriate backend."""
         if self.refresh_in_progress or self.install_in_progress:
             return
 
@@ -1971,11 +1963,13 @@ class UpdateManagerWindow(Gtk.Window):
         self._launch_install(argv, _("Installing selected updates..."))
 
     def on_toggle_details(self, button: Gtk.ToggleButton) -> None:
+        """Reveal or hide the VTE terminal details pane."""
         revealed = button.get_active()
         self.install_details_revealer.set_reveal_child(revealed)
         button.set_label(_("Hide Details") if revealed else _("Show Details"))
 
     def on_back_to_updates(self, _button: Gtk.Button) -> None:
+        """Switch back to the update list view and reload from cache."""
         if self.install_in_progress:
             return
 
@@ -1993,12 +1987,12 @@ class UpdateManagerWindow(Gtk.Window):
         # would trigger backend.refresh() which prompts for pkexec
         # authentication on the APT backend, which is unacceptable UX
         # during simple back-navigation after install.
-        threading.Thread(
-            target=self._load_cached_updates_on_startup, daemon=True
-        ).start()
+        threading.Thread(target=self._load_cached_updates_on_startup,
+                         daemon=True).start()
 
     def on_install_child_exited(self, _terminal: Vte.Terminal,
                                 status: int) -> None:
+        """VTE child-exited signal: route to success or failure finish handler."""
         if status == 0:
             self._finish_install_success()
         else:
@@ -2014,6 +2008,7 @@ class UpdateManagerApplication(Gtk.Application):
     """
 
     def __init__(self, *, deb_path: str | None = None) -> None:
+        """Initialise the Gtk.Application with HANDLES_COMMAND_LINE flag."""
         super().__init__(
             application_id="org.bodhilinux.UpdateManager",
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
@@ -2040,7 +2035,7 @@ class UpdateManagerApplication(Gtk.Application):
 
         In tray mode the window is NOT created here at all — GTK cannot
         implicitly show a window that doesn't exist yet.  The tray icon will
-        call _get_or_create_window() lazily when the user requests it.
+        call get_or_create_window() lazily when the user requests it.
 
         On subsequent activations (e.g. user re-launches the binary while the
         app is already running) we create/show the window unconditionally so
@@ -2054,16 +2049,16 @@ class UpdateManagerApplication(Gtk.Application):
                 self._held_for_tray = True
                 return
 
-            self._window = self._get_or_create_window()
+            self._window = self.get_or_create_window()
             self._window.show_all()
             return
 
         # Already running → raise the window.
-        win = self._get_or_create_window()
+        win = self.get_or_create_window()
         win.show_all()
         win.present()
 
-    def _get_or_create_window(self) -> "UpdateManagerWindow":
+    def get_or_create_window(self) -> "UpdateManagerWindow":
         """Return the existing window, creating and wiring it up if needed."""
         if self._window is None:
             self._window = UpdateManagerWindow(deb_path=self._deb_path)
@@ -2071,6 +2066,22 @@ class UpdateManagerApplication(Gtk.Application):
             # Intercept close: hide instead of destroy while the tray is active.
             self._window.connect("delete-event", self._on_window_delete)
         return self._window
+
+    # ------------------------------------------------------------------
+    # Public tray helpers (called by TrayIcon to avoid protected-access)
+    # ------------------------------------------------------------------
+
+    def set_tray_count(self, count: int, severity: str = "medium") -> None:
+        """Forward an update count to the tray badge (no-op if no tray)."""
+        if self._tray is not None:
+            self._tray.set_update_count(count, severity)
+
+    def quit_from_tray(self) -> None:
+        """Quit the application, releasing hold() if in tray-only mode."""
+        if self._held_for_tray:
+            self._held_for_tray = False
+            self.release()
+        self.quit()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -2085,6 +2096,7 @@ class UpdateManagerApplication(Gtk.Application):
 
 
 def main() -> None:
+    """Entry point: parse argv, create the application, and run."""
     import sys  # noqa: PLC0415
 
     # Sniff positional args for a .deb path only — --tray is handled by
