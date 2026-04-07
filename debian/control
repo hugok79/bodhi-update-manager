@@ -5,6 +5,7 @@ Maintainer: Joseph Wiley <flux.abyss@proton.me>
 Build-Depends:
  debhelper-compat (= 13),
  dh-python,
+ gettext,
  python3
 Standards-Version: 4.7.0
 Rules-Requires-Root: no

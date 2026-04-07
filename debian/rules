@@ -6,6 +6,17 @@
 override_dh_auto_build:
 	VERSION=$$(dpkg-parsechangelog -S Version | cut -d- -f1-2); \
 	printf '"""Version information for the Update Manager."""\n\n__version__ = "%s"\n' "$$VERSION" > src/bodhi_update/_version.py;
+	# Generate translated desktop files  from desktop.in files
+	msgfmt \
+	  --desktop \
+	  --template=data/applications/bodhi-update-manager.in \
+	  -d po \
+	  -o data/applications/bodhi-update-manager.desktop
+	msgfmt \
+	  --desktop \
+	  --template="data/applications/bodhi-update-manager-tray.in" \
+	  -d po \
+	  -o data/applications/bodhi-update-manager-tray.desktop
 
 override_dh_auto_install:
 	# Install the application package tree under /usr/lib/bodhi-update-manager/.

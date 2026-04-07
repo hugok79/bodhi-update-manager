@@ -24,6 +24,7 @@ debian/files
 debian/debhelper-build-stamp
 debian/.debhelper/
 debian/bodhi-update-manager/
+data/applications/*.desktop
 
 # General build artifacts
 *.deb

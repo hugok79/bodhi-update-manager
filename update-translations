@@ -1,35 +1,16 @@
 #!/usr/bin/env bash
-#
-# update-translations:
-#    This script updates bodhi-update-manager's localization files.
-#    Specifically, it uses the file po/POTFILES.in to determine
-#    which source files should be scanned for translatable strings.
-#    It then generates/updates the POT template using xgettext,
-#    merges changes into existing .po files with msgmerge,
-#    and creates new .po files for any languages listed in
-#    po/LINGUAS that do not yet have one.
-#
-# Copyright 2026 ylee@bodhilinux.com
-#
-# This script is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published
-# by the Free Software Foundation; either version 3 of the License, or (at
-# your option) any later version.
-#
-# This script is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this script; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+# be sure opyright and language team is correct
 
 set -euo pipefail
 
 TRANSLATION_DIR="po"
 POT_FILE="$TRANSLATION_DIR/bodhi-update-manager.pot"
 FILE_LIST="$TRANSLATION_DIR/POTFILES.in"
+APP_DIR="data/applications/"
+DESKTOP_TEMPLATE="$APP_DIR/bodhi-update-manager.in"
+XDG_TEMPLATE="$APP_DIR/bodhi-update-manager-tray.in"
+DESKTOP_OUTPUT="$APP_DIR/bodhi-update-manager.desktop"
+XDG_OUTPUT="$APP_DIR/bodhi-update-manager-tray.desktop"
 VERSION=$(PYTHONPATH=src python3 -c 'from bodhi_update._version import __version__; print(__version__)')
 
 check_command() {
@@ -43,6 +24,7 @@ check_command() {
 check_command xgettext
 check_command msgmerge
 check_command msginit
+check_command msgfmt
 
 if [[ ! -f "$TRANSLATION_DIR/LINGUAS" ]]; then
     echo "Missing $TRANSLATION_DIR/LINGUAS"
@@ -70,6 +52,20 @@ xgettext \
   -o "$POT_FILE" \
   --files-from="$FILE_LIST"
 
+xgettext \
+  --join-existing \
+  --language=Desktop \
+  --from-code=UTF-8 \
+  -o "$POT_FILE" \
+  "$DESKTOP_TEMPLATE"
+  
+xgettext \
+  --join-existing \
+  --language=Desktop \
+  --from-code=UTF-8 \
+  -o "$POT_FILE" \
+  "$XDG_TEMPLATE"
+
 sed -i 's/^# Copyright (C) YEAR THE PACKAGE'\''S COPYRIGHT HOLDER/# Copyright (C) 2026 Bodhi Linux Team/' "$POT_FILE"
 
 for lang in "${langs[@]}"; do
@@ -84,8 +80,22 @@ for lang in "${langs[@]}"; do
             --input="$POT_FILE" \
             --locale="$lang" \
             --output-file="$po_file" \
-            --no-translator
+            --no-translator \
+            --package-name="bodhi-update-manager"
         # Set Language-Team
         sed -i "s/^\"Language-Team:.*\"/\"Language-Team: Bodhi Team\\\\n\"/" "$po_file"
     fi
 done
+
+echo "Generating translated desktop files"
+msgfmt \
+  --desktop \
+  --template="$DESKTOP_TEMPLATE" \
+  -d "$TRANSLATION_DIR" \
+  -o "$DESKTOP_OUTPUT"
+
+msgfmt \
+  --desktop \
+  --template="$XDG_TEMPLATE" \
+  -d "$TRANSLATION_DIR" \
+  -o "$XDG_OUTPUT"
