@@ -89,7 +89,7 @@ xgettext \
     -o "$POT_FILE" \
     "${POLICY_TEMPLATE}.h"
 
-# rm -f "${POLICY_TEMPLATE}.h"
+rm -f "${POLICY_TEMPLATE}.h"
 
 YEAR=$(date +%Y)
 sed -i "s/^# Copyright (C).*/# Copyright (C) $YEAR Bodhi Linux Team/" "$POT_FILE"
