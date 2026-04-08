@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-# be sure opyright and language team is correct
+#
+# update-translations:
+#    This script updates bodhi-update-manager's localization files.
+#    Specifically, it uses po/POTFILES.in to determine which source
+#    files should be scanned for translatable Python strings.
+#    It also extracts strings from the desktop file and PolicyKit
+#    policy template, updates the POT template, merges changes into
+#    existing .po files, creates missing .po files for languages
+#    listed in po/LINGUAS.
+#
 
 set -euo pipefail
 
@@ -9,14 +18,15 @@ FILE_LIST="$TRANSLATION_DIR/POTFILES.in"
 APP_DIR="data/applications/"
 DESKTOP_TEMPLATE="$APP_DIR/bodhi-update-manager.in"
 XDG_TEMPLATE="$APP_DIR/bodhi-update-manager-tray.in"
+POLICY_TEMPLATE="data/polkit/org.bodhi.updatemanager.policy.in"
 DESKTOP_OUTPUT="$APP_DIR/bodhi-update-manager.desktop"
 XDG_OUTPUT="$APP_DIR/bodhi-update-manager-tray.desktop"
+POLICY_OUTPUT="data/polkit/org.bodhi.updatemanager.policy"
 VERSION=$(PYTHONPATH=src python3 -c 'from bodhi_update._version import __version__; print(__version__)')
 
 check_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo "$1 could not be found."
-        echo "You can install it with: sudo apt install gettext"
         exit 255
     fi
 }
@@ -25,6 +35,8 @@ check_command xgettext
 check_command msgmerge
 check_command msginit
 check_command msgfmt
+check_command intltool-extract
+check_command intltool-merge
 
 if [[ ! -f "$TRANSLATION_DIR/LINGUAS" ]]; then
     echo "Missing $TRANSLATION_DIR/LINGUAS"
@@ -66,7 +78,21 @@ xgettext \
   -o "$POT_FILE" \
   "$XDG_TEMPLATE"
 
-sed -i 's/^# Copyright (C) YEAR THE PACKAGE'\''S COPYRIGHT HOLDER/# Copyright (C) 2026 Bodhi Linux Team/' "$POT_FILE"
+echo -e "Extracting PolicyKit strings\n"
+intltool-extract --type=gettext/xml "$POLICY_TEMPLATE"
+
+xgettext \
+    --join-existing \
+    --language=C \
+    --from-code=UTF-8 \
+    --keyword=N_ \
+    -o "$POT_FILE" \
+    "${POLICY_TEMPLATE}.h"
+
+# rm -f "${POLICY_TEMPLATE}.h"
+
+YEAR=$(date +%Y)
+sed -i "s/^# Copyright (C).*/# Copyright (C) $YEAR Bodhi Linux Team/" "$POT_FILE"
 
 for lang in "${langs[@]}"; do
     po_file="$TRANSLATION_DIR/$lang.po"
@@ -87,7 +113,7 @@ for lang in "${langs[@]}"; do
     fi
 done
 
-echo "Generating translated desktop files"
+echo -e "\nGenerating translated Desktop files"
 msgfmt \
   --desktop \
   --template="$DESKTOP_TEMPLATE" \
@@ -99,3 +125,16 @@ msgfmt \
   --template="$XDG_TEMPLATE" \
   -d "$TRANSLATION_DIR" \
   -o "$XDG_OUTPUT"
+
+msgfmt \
+  --xml \
+  --template="$POLICY_TEMPLATE" \
+  -d "$TRANSLATION_DIR" \
+  -o "$POLICY_OUTPUT"
+
+echo "Generating translated PolicyKit file"
+intltool-merge -x "$TRANSLATION_DIR" \
+    "$POLICY_TEMPLATE" \
+    "$POLICY_OUTPUT" > /dev/null 2>&1
+
+echo -e "\nLocalization Update Complete"
