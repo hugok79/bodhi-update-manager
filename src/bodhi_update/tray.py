@@ -92,14 +92,20 @@ def _pkg_severity(name: str, category: str, backend: str) -> str:
 
 def _read_pref(key: str, default: bool = True) -> bool:
     """Read a single boolean preference from the shared prefs file."""
+    config_home = os.environ.get("XDG_CONFIG_HOME",
+                                 os.path.expanduser("~/.config"))
+    path = os.path.join(config_home, "bodhi-update-manager", "prefs.json")
+
     try:
-        config_home = os.environ.get("XDG_CONFIG_HOME",
-                                     os.path.expanduser("~/.config"))
-        path = os.path.join(config_home, "bodhi-update-manager", "prefs.json")
         with open(path, "r", encoding="utf-8") as f:
-            return bool(json.load(f).get(key, default))
-    except Exception:  # pylint: disable=broad-except
-        return default
+            data = json.load(f)
+            if isinstance(data, dict):
+                return bool(data.get(key, default))
+    except (OSError, json.JSONDecodeError, AttributeError):
+        # File issues, bad JSON, or .get() failing on non-dict data
+        pass
+
+    return default
 
 
 def _write_pixel(pixels: bytearray, p: int, color: tuple,
@@ -195,12 +201,13 @@ class TrayIcon:
             icon.set_from_icon_name(self._ICON_NAME)
             icon.set_tooltip_text("Update Manager")
             icon.set_visible(True)
-            icon.connect("activate", lambda _: self._show_window())
+            icon.connect("activate", lambda _: self._toggle_window())
             icon.connect("popup-menu", self._on_status_icon_popup)
             self._status_icon = icon
             self._menu = menu  # keep menu alive as long as the icon is alive
-        except Exception:  # pylint: disable=broad-except
-            # StatusIcon unavailable (e.g. Wayland-only compositor); try AppIndicator.
+        except (AttributeError, TypeError, RuntimeError):
+            # StatusIcon is missing from the library or rejected by the Display Server.
+            # Fall back to AppIndicator on desktops that need it.
             if _APP_INDICATOR is not None:
                 self._indicator = _APP_INDICATOR.Indicator.new(
                     self._ICON_NAME,
@@ -325,11 +332,14 @@ class TrayIcon:
                             severity = "high"
                         elif s == "medium" and severity != "high":
                             severity = "medium"
-                except Exception:  # pylint: disable=broad-except
-                    pass
+                except (OSError, RuntimeError, ValueError, AttributeError):
+                    # Individual backend failed; skip it and try the others
+                    continue
             GLib.idle_add(self.set_update_count, count, severity)
-        except Exception:  # pylint: disable=broad-except
-            pass  # Never crash the tray over a background check.
+        except (ImportError, OSError, RuntimeError, AttributeError):
+            # Registry init failed or GLib/GObject bridge issues
+            # Never crash the tray over a background check.
+            pass
 
     # ------------------------------------------------------------------
     # Badge update
@@ -367,8 +377,11 @@ class TrayIcon:
             # Just ensure the icon name is set correctly; badge is degraded.
             if self._indicator is not None:
                 self._indicator.set_icon_full(self._ICON_NAME, tooltip)
-        except Exception:  # pylint: disable=broad-except
-            pass  # Never crash the tray over a cosmetic update.
+        except (AttributeError, TypeError, GLib.Error):
+            # AttributeError: Missing Gtk/AppIndicator methods
+            # TypeError: Pixbuf/Icon name mismatch
+            # GLib.Error: Gtk.IconTheme failed to find/load the icon
+            pass
 
     # ------------------------------------------------------------------
     # Lifecycle

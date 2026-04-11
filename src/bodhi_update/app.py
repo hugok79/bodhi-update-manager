@@ -14,6 +14,7 @@ from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 log = logging.getLogger("bodhi-update-manager")
+logger = logging.getLogger(__name__)
 
 APP_NAME = "bodhi-update-manager"
 
@@ -60,6 +61,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 )
+
+
+def clamp(value: int, lo: int, hi: int) -> int:
+    """Return *value* clamped to [lo, hi]."""
+    return max(lo, min(value, hi))
 
 
 class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attributes
@@ -747,13 +753,25 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             "show_flatpak": True,
         }
         path = self._get_prefs_path()
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    defaults.update(json.load(f))
-            except Exception:  # pylint: disable=broad-except
-                # Ignore I/O or parse errors; prefs are non-critical
-                pass
+
+        if not os.path.exists(path):
+            return defaults
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except OSError as e:
+            logger.warning("Could not read prefs file at %s: %s", path, e)
+            return defaults
+        except json.JSONDecodeError as e:
+            logger.error("Prefs file is corrupted JSON at %s: %s", path, e)
+            return defaults
+
+        if not isinstance(data, dict):
+            logger.error("Prefs file expected a dict but got %s", type(data).__name__)
+            return defaults
+
+        defaults.update(data)
         return defaults
 
     def _save_prefs(self) -> None:
@@ -762,8 +780,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(self.prefs, f)
-        except Exception:  # pylint: disable=broad-except
-            # Ignore I/O errors; prefs are non-critical
+        except (OSError, TypeError):
+            # OSError: directory creation or file write failed
+            # TypeError: prefs dict contains non-serializable value
             pass
 
     # ------------------------------------------------------------------ #
@@ -807,26 +826,24 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         width = preferred_w
         height = preferred_h
 
+        # Catching specific GDK or logic errors only
         try:
             screen = Gdk.Screen.get_default()
             if screen is not None:
-                monitor_num = screen.get_primary_monitor()
-                monitor_num = max(monitor_num, 0)
-
+                monitor_num = max(screen.get_primary_monitor(), 0)
                 workarea = screen.get_monitor_workarea(monitor_num)
-                max_w = max(min_w, workarea.width - margin)
-                max_h = max(min_h, workarea.height - margin)
 
-                # shrink if the monitor/workarea is too small
-                width = min(preferred_w, max_w)
-                height = min(preferred_h, max_h)
+                # Ensure we have valid dimensions before calculating
+                if workarea and workarea.width > 0 and workarea.height > 0:
+                    max_w = max(min_w, workarea.width - margin)
+                    max_h = max(min_h, workarea.height - margin)
 
-                width = max(min_w, width)
-                height = max(min_h, height)
-        except Exception:  # pylint: disable=broad-except
-            # Fall back to the preferred size if monitor detection fails.
-            width = preferred_w
-            height = preferred_h
+                    # shrink if the monitor/workarea is too small
+                    width = clamp(preferred_w, min_w, max_w)
+                    height = clamp(preferred_h, min_h, max_h)
+        except (AttributeError, TypeError, ValueError):
+            # Fall back to preferred size if GDK API fails or returns junk
+            width, height = preferred_w, preferred_h
 
         self.set_default_size(width, height)
 
@@ -1079,8 +1096,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 items, b = backend.get_updates()
                 apt_updates.extend(items)
                 apt_bytes += b
-            except Exception:  # pylint: disable=broad-except
-                pass
+            except (OSError, RuntimeError, ValueError):
+                # Ignore locks, backend crashes, or malformed data return
+                continue
 
         show_desc = self.prefs.get("show_descriptions", True)
         self.store.freeze_notify()
@@ -1402,7 +1420,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 b_updates, b_bytes = backend.get_updates()
                 updates.extend(b_updates)
                 total_bytes += b_bytes
-            except Exception as exc:  # pylint: disable=broad-except
+            except (OSError, RuntimeError, ValueError) as exc:
+                # Capture the specific failure to report in the UI
                 error_msgs.append(f"{backend.display_name}: {exc}")
 
         GLib.idle_add(self._finish_startup_load, updates, total_bytes,
@@ -1504,7 +1523,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 updates.extend(b_updates)
                 total_bytes += b_bytes
                 successful_backends += 1
-            except Exception as exc:  # pylint: disable=broad-except
+            except (OSError, RuntimeError, ValueError) as exc:
+                # Catching specific system/data errors to report to UI
                 log.error("Backend %s get_updates failed: %s",
                           backend.display_name, exc)
                 messages.append(
@@ -1565,7 +1585,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         try:
             self.install_terminal.reset(True, True)
-        except Exception:  # pylint: disable=broad-except  # VTE reset may raise on Wayland
+        except (AttributeError, TypeError, RuntimeError):  # VTE reset may raise on Wayland
             pass
 
     def _mark_install_running(self) -> None:
@@ -1790,7 +1810,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             result = self.install_terminal.get_text(lambda *a: True, None)
             text = result[0] if isinstance(result, tuple) else result
             return text or ""
-        except Exception:  # pylint: disable=broad-except  # VTE get_text API is loosely typed
+        except (AttributeError, TypeError, ValueError):
+            # VTE API is loosely typed and sensitive to GArray pointers;
+            # return empty string if the bridge or assertion fails.
             return ""
 
     def _on_reboot_bar_response(self, _bar: Gtk.InfoBar,

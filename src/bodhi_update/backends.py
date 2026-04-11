@@ -155,7 +155,10 @@ def discover_plugins() -> List[type[UpdateBackend]]:
         module_name = f"bodhi_update.plugins.{stem}"
         try:
             module = importlib.import_module(module_name)
-        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
+        except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
+            # ImportError: Missing dependencies in the plugin
+            # SyntaxError: The plugin has a typo/bad syntax
+            # RuntimeError/TypeError: Module-level initialization failed
             _log.debug("Skipping plugin %r: %s", module_name, exc)
             continue
 
@@ -202,7 +205,10 @@ def initialize_registry() -> None:
                 continue
             reg.register(instance)
             _log.debug("Registered backend: %r", bid)
-        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
+        except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
+            # AttributeError: backend_id property is missing
+            # TypeError/ValueError: Constructor arguments or return types are wrong
+            # RuntimeError: Backend failed to initialize (e.g. D-Bus connection failed)
             _log.warning(
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,

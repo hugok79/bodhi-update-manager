@@ -159,7 +159,9 @@ def _get_held_packages() -> set[str]:
             check=False,
         )
         return set(result.stdout.split())
-    except Exception:  # pylint: disable=broad-except
+    except (OSError, subprocess.SubprocessError):
+        # OSError: 'apt-mark' not found or permission denied
+        # SubprocessError: includes TimeoutExpired if it hits that 10s limit
         return set()
 
 
@@ -185,7 +187,7 @@ def _get_kept_back_packages() -> set[str]:
             timeout=30,
             check=False,
         )
-    except Exception:  # pylint: disable=broad-except
+    except (OSError, subprocess.SubprocessError):
         return set()
 
     kept_back: set[str] = set()
@@ -221,7 +223,7 @@ def _apt_cache_depends(held_pkg: str) -> set[str]:
             timeout=10,
             check=False,
         )
-    except Exception:  # pylint: disable=broad-except
+    except (OSError, subprocess.SubprocessError):
         return set()
 
     deps: set[str] = set()
