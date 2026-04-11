@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
 "Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
 "issues\n"
-"POT-Creation-Date: 2026-04-08 17:32+0200\n"
+"POT-Creation-Date: 2026-04-11 16:12-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: Bodhi Team\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/bodhi_update/app.py:44
+#: src/app.py:45
 msgid ""
 "Update Manager\n"
 "\n"
@@ -29,7 +29,7 @@ msgstr ""
 "Een lichtgewicht grafische updatebeheerder voor Debian-gebaseerde "
 "distributies."
 
-#: src/bodhi_update/app.py:50
+#: src/app.py:51
 msgid ""
 "This program is free software: you can redistribute it and/or modify\n"
 "it under the terms of the GNU General Public License as published by\n"
@@ -57,166 +57,154 @@ msgstr ""
 "U zou een kopie van de GNU General Public License moeten hebben ontvangen "
 "samen met dit programma. Zo niet, zie <https://www.gnu.org/licenses/>."
 
-#: src/bodhi_update/app.py:83 src/bodhi_update/app.py:666
-#: data/applications//bodhi-update-manager.in:4
-#: data/applications//bodhi-update-manager-tray.in:4
+#: src/app.py:79 src/app.py:662 data/applications//bodhi-update-manager.in:5
+#: data/applications//bodhi-update-manager-tray.in:5
 msgid "Update Manager"
 msgstr "Update Manager"
 
-#: src/bodhi_update/app.py:180
+#: src/app.py:176
 msgid "File"
 msgstr "Bestand"
 
-#: src/bodhi_update/app.py:183 src/bodhi_update/app.py:260
+#: src/app.py:179 src/app.py:256
 msgid "Refresh"
 msgstr "Vernieuwen"
 
-#: src/bodhi_update/app.py:188 src/bodhi_update/app.py:264
+#: src/app.py:184 src/app.py:260
 msgid "Install Selected"
 msgstr "Geselecteerde installeren"
 
-#: src/bodhi_update/app.py:195 src/bodhi_update/app.py:256
+#: src/app.py:191 src/app.py:252
 msgid "Select All"
 msgstr "Alles selecteren"
 
-#: src/bodhi_update/app.py:200 src/bodhi_update/app.py:252
+#: src/app.py:196 src/app.py:248
 msgid "Clear"
 msgstr "Wissen"
 
-#: src/bodhi_update/app.py:207
+#: src/app.py:203
 msgid "Quit"
 msgstr "Afsluiten"
 
-#: src/bodhi_update/app.py:215
+#: src/app.py:211
 msgid "Edit"
 msgstr "Bewerken"
 
-#: src/bodhi_update/app.py:218 src/bodhi_update/app.py:508
+#: src/app.py:214 src/app.py:504
 msgid "Preferences"
 msgstr "Voorkeuren"
 
-#: src/bodhi_update/app.py:226
+#: src/app.py:222
 msgid "View"
 msgstr "Beeld"
 
-#: src/bodhi_update/app.py:229
+#: src/app.py:225
 msgid "Show Descriptions"
 msgstr "Beschrijvingen tonen"
 
-#: src/bodhi_update/app.py:239
+#: src/app.py:235
 msgid "Help"
 msgstr "Help"
 
-#: src/bodhi_update/app.py:242 src/bodhi_update/app.py:590
+#: src/app.py:238 src/app.py:586
 msgid "About"
 msgstr "Over"
 
-#: src/bodhi_update/app.py:273
+#: src/app.py:269
 msgid "All"
 msgstr "Alles"
 
-#: src/bodhi_update/app.py:274
+#: src/app.py:270
 msgid "Security"
 msgstr "Beveiliging"
 
-#: src/bodhi_update/app.py:275
+#: src/app.py:271
 msgid "Kernel"
 msgstr "Kernel"
 
-#: src/bodhi_update/app.py:276
+#: src/app.py:272
 msgid "System"
 msgstr "Systeem"
 
-#: src/bodhi_update/app.py:299
+#: src/app.py:295
 msgid "A system restart is required to complete the update."
 msgstr "Een systeemherstart is vereist om de update te voltooien."
 
-#: src/bodhi_update/app.py:303
+#: src/app.py:299
 msgid "Restart Now"
 msgstr "Nu herstarten"
 
-#: src/bodhi_update/app.py:350
+#: src/app.py:346
 msgid "Type"
 msgstr "Type"
 
-#: src/bodhi_update/app.py:363
+#: src/app.py:359
 msgid "Upgrade"
 msgstr "Upgrade"
 
-#: src/bodhi_update/app.py:378
+#: src/app.py:374
 msgid "Package"
 msgstr "Pakket"
 
-#: src/bodhi_update/app.py:388
+#: src/app.py:384
 msgid "Installed"
 msgstr "Geïnstalleerd"
 
-#: src/bodhi_update/app.py:393
+#: src/app.py:389
 msgid "New"
 msgstr "Nieuw"
 
-#: src/bodhi_update/app.py:398
+#: src/app.py:394
 msgid "Size"
 msgstr "Grootte"
 
-#: src/bodhi_update/app.py:403
+#: src/app.py:399
 msgid "Repository"
 msgstr "Repository"
 
-#: src/bodhi_update/app.py:440 src/bodhi_update/app.py:1585
-#: src/bodhi_update/app.py:1586
-msgid "Installing updates..."
-msgstr "Updates installeren..."
-
-#: src/bodhi_update/app.py:445 src/bodhi_update/app.py:452
-#: src/bodhi_update/app.py:1552 src/bodhi_update/app.py:1555
-#: src/bodhi_update/app.py:1660
+#: src/app.py:441 src/app.py:448 src/app.py:1562 src/app.py:1565
+#: src/app.py:1670
 msgid "Waiting for authentication..."
 msgstr "Wachten op authenticatie..."
 
-#: src/bodhi_update/app.py:458 src/bodhi_update/app.py:1560
-#: src/bodhi_update/app.py:1969
+#: src/app.py:454 src/app.py:1570 src/app.py:1981
 msgid "Show Details"
 msgstr "Details tonen"
 
-#: src/bodhi_update/app.py:462
+#: src/app.py:458
 msgid "Back to Updates"
 msgstr "Terug naar Updates"
 
-#: src/bodhi_update/app.py:512
+#: src/app.py:508
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: src/bodhi_update/app.py:513
+#: src/app.py:509
 msgid "Apply"
 msgstr "Toepassen"
 
-#: src/bodhi_update/app.py:524
+#: src/app.py:520
 #, fuzzy
 msgid "Show notifications"
 msgstr "Beschrijvingen tonen"
 
-#: src/bodhi_update/app.py:528
+#: src/app.py:524
 msgid "Show held/blocked packages"
 msgstr ""
 
-#: src/bodhi_update/app.py:536
+#: src/app.py:532
 msgid "Show Snap updates"
 msgstr "Snap-updates tonen"
 
-#: src/bodhi_update/app.py:541
+#: src/app.py:537
 msgid "Show Flatpak updates"
 msgstr "Flatpak-updates tonen"
 
-#: src/bodhi_update/app.py:581
+#: src/app.py:577
 msgid "Preferences saved."
 msgstr "Voorkeuren opgeslagen."
 
-#: src/bodhi_update/app.py:614
-msgid "Version:"
-msgstr ""
-
-#: src/bodhi_update/app.py:644
+#: src/app.py:640
 msgid ""
 "Website\n"
 "\n"
@@ -226,7 +214,7 @@ msgstr ""
 "\n"
 "    https://github.com/flux-abyss/bodhi-update-manager"
 
-#: src/bodhi_update/app.py:649
+#: src/app.py:645
 msgid ""
 "Credits\n"
 "\n"
@@ -246,7 +234,7 @@ msgstr ""
 "        Robert “ylee” Wiley\n"
 "        Diego “diekrz2” K."
 
-#: src/bodhi_update/app.py:659
+#: src/app.py:655
 msgid ""
 "Copyright © 2026 Joseph “flux.abyss” Wiley\n"
 "\n"
@@ -256,193 +244,192 @@ msgstr ""
 "\n"
 "    "
 
-#: src/bodhi_update/app.py:667
+#: src/app.py:663
 msgid "Website"
 msgstr "Website"
 
-#: src/bodhi_update/app.py:668
+#: src/app.py:664
 msgid "Credits"
 msgstr "Credits"
 
-#: src/bodhi_update/app.py:669
+#: src/app.py:665
 msgid "License"
 msgstr "Licentie"
 
-#: src/bodhi_update/app.py:834
+#: src/app.py:841
 msgid "Restart required."
 msgstr "Herstart vereist."
 
-#: src/bodhi_update/app.py:834 src/bodhi_update/app.py:1756
+#: src/app.py:841 src/app.py:1766
 msgid "Ready"
 msgstr "Gereed"
 
-#: src/bodhi_update/app.py:867 src/bodhi_update/app.py:1239
-#: src/bodhi_update/app.py:1495
+#: src/app.py:874 src/app.py:1247 src/app.py:1504
 #, fuzzy
 msgid "Loading updates..."
 msgstr "Updates installeren..."
 
-#: src/bodhi_update/app.py:891
+#: src/app.py:898
 #, python-format
 msgid "%(message)s  Restart required."
 msgstr "%(message)s  Herstart vereist."
 
-#: src/bodhi_update/app.py:904
+#: src/app.py:911
 #, fuzzy
 msgid "System is up to date. No pending updates in cached package data."
 msgstr "Systeem is up-to-date. Gecachte pakketgegevens worden getoond."
 
-#: src/bodhi_update/app.py:906
+#: src/app.py:913
 msgid "System is up to date."
 msgstr "Systeem is up-to-date."
 
-#: src/bodhi_update/app.py:915 src/bodhi_update/app.py:1016
+#: src/app.py:922 src/app.py:1023
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: src/bodhi_update/app.py:919
+#: src/app.py:926
 #, python-format
 msgid "%(count)d update available · Download: %(size)s"
 msgid_plural "%(count)d updates available · Download: %(size)s"
 msgstr[0] "%(count)d update beschikbaar · Download: %(size)s"
 msgstr[1] "%(count)d updates beschikbaar · Download: %(size)s"
 
-#: src/bodhi_update/app.py:927
+#: src/app.py:934
 #, fuzzy, python-format
 msgid "%(message)s · Cached data — refresh to check for newer updates"
 msgstr "%(message)s · Gecachte pakketgegevens"
 
-#: src/bodhi_update/app.py:940
+#: src/app.py:947
 #, python-format
 msgid "%(message)s (includes %(extras)s)"
 msgstr "%(message)s (inclusief %(extras)s)"
 
-#: src/bodhi_update/app.py:951
+#: src/app.py:958
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/bodhi_update/app.py:1018
+#: src/app.py:1025
 #, python-format
 msgid "%(count)d update selected · Download: %(size)s"
 msgid_plural "%(count)d updates selected · Download: %(size)s"
 msgstr[0] "%(count)d update geselecteerd · Download: %(size)s"
 msgstr[1] "%(count)d updates geselecteerd · Download: %(size)s"
 
-#: src/bodhi_update/app.py:1053
+#: src/app.py:1060
 msgid "Unhold package"
 msgstr ""
 
-#: src/bodhi_update/app.py:1053
+#: src/app.py:1060
 #, fuzzy
 msgid "Hold package"
 msgstr "Pakket"
 
-#: src/bodhi_update/app.py:1104 src/bodhi_update/app.py:1344
-#: src/bodhi_update/app.py:1378
+#: src/app.py:1112 src/app.py:1352 src/app.py:1386
 msgid "System package"
 msgstr "Systeempakket"
 
-#: src/bodhi_update/app.py:1124
+#: src/app.py:1132
 msgid "Locking package..."
 msgstr ""
 
-#: src/bodhi_update/app.py:1124
+#: src/app.py:1132
 msgid "Unlocking package..."
 msgstr ""
 
-#: src/bodhi_update/app.py:1135 src/bodhi_update/app.py:1556
-#: src/bodhi_update/app.py:1661 src/bodhi_update/app.py:1900
+#: src/app.py:1143 src/app.py:1566 src/app.py:1671 src/app.py:1912
 #, fuzzy
 msgid "Waiting for authorization..."
 msgstr "Wachten op authenticatie..."
 
-#: src/bodhi_update/app.py:1164
+#: src/app.py:1172
 msgid "apt-mark failed (unknown error)"
 msgstr ""
 
-#: src/bodhi_update/app.py:1168
+#: src/app.py:1176
 #, python-format
 msgid "Package '%(name)s' is now held."
 msgstr ""
 
-#: src/bodhi_update/app.py:1170
+#: src/app.py:1178
 #, python-format
 msgid "Package '%(name)s' is no longer held."
 msgstr ""
 
-#: src/bodhi_update/app.py:1329
+#: src/app.py:1337
 #, fuzzy
 msgid "Held package"
 msgstr "Systeempakket"
 
-#: src/bodhi_update/app.py:1338
+#: src/app.py:1346
 msgid "Blocked by held package or dependency constraints"
 msgstr ""
 
-#: src/bodhi_update/app.py:1361
+#: src/app.py:1369
 msgid "N/A"
 msgstr "N.v.t."
 
-#: src/bodhi_update/app.py:1422
+#: src/app.py:1431
 msgid "Failed to read cached package information."
 msgstr "Kan gecachte pakketinformatie niet lezen."
 
-#: src/bodhi_update/app.py:1443
+#: src/app.py:1452
 #, python-format
 msgid "Refresh finished. %d updates. Success: %s"
 msgstr "Vernieuwen voltooid. %d updates. Succes: %s"
 
-#: src/bodhi_update/app.py:1460
+#: src/app.py:1469
 #, python-format
 msgid "%(current_status)s — Warning: %(message)s"
 msgstr "%(current_status)s — Waarschuwing: %(message)s"
 
-#: src/bodhi_update/app.py:1516
+#: src/app.py:1526
 msgid "Package lists refreshed."
 msgstr "Pakketlijsten vernieuwd."
 
-#: src/bodhi_update/app.py:1520
+#: src/app.py:1530
 #, python-format
 msgid "Finished querying backends. Total updates: %d"
 msgstr "Backends bevraagd. Totaal updates: %d"
 
-#: src/bodhi_update/app.py:1583
+#: src/app.py:1593
 msgid "This may take a few minutes."
 msgstr "Dit kan een paar minuten duren."
 
-#: src/bodhi_update/app.py:1590 src/bodhi_update/app.py:1617
-#: src/bodhi_update/app.py:1657 src/bodhi_update/app.py:1776
-#: src/bodhi_update/app.py:1969
+#: src/app.py:1595 src/app.py:1596
+msgid "Installing updates..."
+msgstr "Updates installeren..."
+
+#: src/app.py:1600 src/app.py:1627 src/app.py:1667 src/app.py:1786
+#: src/app.py:1981
 msgid "Hide Details"
 msgstr "Details verbergen"
 
-#: src/bodhi_update/app.py:1606
+#: src/app.py:1616
 #, python-format
 msgid "Spawn failed: %s"
 msgstr "Starten mislukt: %s"
 
-#: src/bodhi_update/app.py:1611 src/bodhi_update/app.py:1742
-#: src/bodhi_update/app.py:1768
+#: src/app.py:1621 src/app.py:1752 src/app.py:1778
 msgid "Failed"
 msgstr "Mislukt"
 
-#: src/bodhi_update/app.py:1613
+#: src/app.py:1623
 msgid "Failed to start installation. See Details below."
 msgstr "Installatie starten mislukt. Zie Details hieronder."
 
-#: src/bodhi_update/app.py:1618
+#: src/app.py:1628
 msgid "Failed to start installation."
 msgstr "Installatie starten mislukt."
 
-#: src/bodhi_update/app.py:1621
+#: src/app.py:1631
 #, python-format
 msgid "Install process spawned (pid %s)."
 msgstr "Installatieproces gestart (pid %s)."
 
-#: src/bodhi_update/app.py:1649
+#: src/app.py:1659
 msgid ""
 "Enter your password in the terminal below. For security, nothing will appear "
 "while typing."
@@ -450,76 +437,76 @@ msgstr ""
 "Voer uw wachtwoord in in de terminal hieronder. Om veiligheidsredenen "
 "verschijnt er niets tijdens het typen."
 
-#: src/bodhi_update/app.py:1653
+#: src/app.py:1663
 msgid "Terminal auth in use — revealing VTE for password entry."
 msgstr ""
 "Terminalauthenticatie in gebruik — VTE wordt getoond voor wachtwoordinvoer."
 
-#: src/bodhi_update/app.py:1704
+#: src/app.py:1714
 #, python-format
 msgid "Starting installation: %s"
 msgstr "Installatie starten: %s"
 
-#: src/bodhi_update/app.py:1705
+#: src/app.py:1715
 #, python-format
 msgid "Command: %s"
 msgstr "Opdracht: %s"
 
-#: src/bodhi_update/app.py:1739 src/bodhi_update/app.py:1746
+#: src/app.py:1749 src/app.py:1756
 #, python-format
 msgid "Installing %(deb_name)s..."
 msgstr "Installeren van %(deb_name)s..."
 
-#: src/bodhi_update/app.py:1744
+#: src/app.py:1754
 #, python-format
 msgid "Validation failed: %(exc)s"
 msgstr "Validatie mislukt: %(exc)s"
 
-#: src/bodhi_update/app.py:1749
+#: src/app.py:1759
 msgid "Installation completed successfully."
 msgstr "Installatie succesvol voltooid."
 
-#: src/bodhi_update/app.py:1754
+#: src/app.py:1764
 msgid "Complete"
 msgstr "Voltooid"
 
-#: src/bodhi_update/app.py:1755
+#: src/app.py:1765
 msgid "Updates installed successfully."
 msgstr "Updates succesvol geïnstalleerd."
 
-#: src/bodhi_update/app.py:1763
+#: src/app.py:1773
 #, python-format
 msgid "Installation failed with exit code: %s"
 msgstr "Installatie mislukt met afsluitcode: %s"
 
-#: src/bodhi_update/app.py:1770
+#: src/app.py:1780
 #, python-format
 msgid "Update failed. Exit code: %(exit_code)s. See Details below."
 msgstr "Update mislukt. Afsluitcode: %(exit_code)s. Zie Details hieronder."
 
-#: src/bodhi_update/app.py:1777
+#: src/app.py:1787
 #, python-format
 msgid "Update failed. Exit code: %(exit_code)s"
 msgstr "Update mislukt. Afsluitcode: %(exit_code)s"
 
-#: src/bodhi_update/app.py:1804
+#: src/app.py:1816
 msgid "No privilege tool found. Please reboot manually."
 msgstr "Geen privilege-tool gevonden. Gelieve handmatig opnieuw op te starten."
 
-#: src/bodhi_update/app.py:1812
+#: src/app.py:1824
 #, python-format
 msgid "Failed to initiate reboot: %(exc)s"
 msgstr "Opnieuw opstarten mislukt: %(exc)s"
 
-#: src/bodhi_update/app.py:1908
+#: src/app.py:1920
 msgid "Starting background refresh for updates."
 msgstr "Achtergrondverversing voor updates wordt gestart."
 
-#: src/bodhi_update/app.py:1926
+#: src/app.py:1938
 msgid "Primary backend (APT) is not configured."
 msgstr "Primaire backend (APT) is niet geconfigureerd."
 
-#: src/bodhi_update/app.py:1930
+#: src/app.py:1942
 msgid ""
 "Installing from multiple package sources simultaneously is not yet "
 "supported. Please select packages from one source type only."
@@ -527,21 +514,21 @@ msgstr ""
 "Installeren vanuit meerdere pakketbronnen tegelijk wordt nog niet "
 "ondersteund. Selecteer pakketten van slechts één brontype."
 
-#: src/bodhi_update/app.py:1940
+#: src/app.py:1952
 #, python-format
 msgid "Requested installation for unknown backend: %(backend_id)s"
 msgstr "Installatie aangevraagd voor onbekende backend: %(backend_id)s"
 
-#: src/bodhi_update/app.py:1953
+#: src/app.py:1965
 msgid "No packages selected."
 msgstr "Geen pakketten geselecteerd."
 
-#: src/bodhi_update/app.py:1963
+#: src/app.py:1975
 msgid "Installing selected updates..."
 msgstr "Geselecteerde updates worden geïnstalleerd..."
 
-#: data/applications//bodhi-update-manager.in:5
-#: data/applications//bodhi-update-manager-tray.in:5
+#: data/applications//bodhi-update-manager.in:6
+#: data/applications//bodhi-update-manager-tray.in:6
 msgid "Install system updates and local packages for Bodhi Linux"
 msgstr ""
 
