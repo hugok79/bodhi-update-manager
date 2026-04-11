@@ -102,14 +102,14 @@ def get_registry() -> BackendRegistry:
 def _is_valid_backend_class(obj: object, module_name: str) -> bool:
     """Return True if *obj* is a concrete UpdateBackend subclass defined in *module_name*.
 
-    A valid class must:
-    - be a class (not an instance or module),
-    - be **defined** in the plugin module (not merely imported into it),
-    - subclass UpdateBackend without *being* UpdateBackend,
-    - not be abstract (no unimplemented abstractmethods).
+    Criteria:
+    - must be a class (not an instance or module)
+    - must be defined in the plugin module, not just imported into it
+    - must subclass UpdateBackend without being UpdateBackend itself
+    - must not be abstract
 
-    ``backend_id`` validity is checked after instantiation in
-    ``initialize_registry()``; we do not call it here.
+    Note: backend_id validity is checked by initialize_registry() after
+    instantiation, not here.
     """
     if not inspect.isclass(obj):
         return False
@@ -127,23 +127,13 @@ def _is_valid_backend_class(obj: object, module_name: str) -> bool:
 
 
 def discover_plugins() -> List[type[UpdateBackend]]:
-    """Scan the plugins package and return concrete UpdateBackend subclasses.
-
-    Discovery steps:
-    1. Locate the ``plugins`` subdirectory next to this module.
-    2. Iterate plugin ``*.py`` files in sorted order (stable across envs).
-    3. Import each module via ``importlib``; any ``Exception`` is caught and
-       logged at DEBUG level so optional backends never crash startup.
-    4. Collect classes **defined in that module** that pass validation.
-    5. Deduplicate by identity before returning.
-
-    Returns a list of concrete backend class objects ready to be instantiated.
-    """
+    """Scan the plugins package and return concrete UpdateBackend subclasses."""
+    # Sorted for deterministic loading order across environments.
     plugins_dir = Path(__file__).parent / "plugins"
     discovered: List[type[UpdateBackend]] = []
     seen_ids: set = set()
 
-    # Sort for deterministic, environment-independent loading order.
+    # Sort for deterministic loading order.
     plugin_files = sorted(plugins_dir.glob("*.py"))
 
     for path in plugin_files:
@@ -156,9 +146,7 @@ def discover_plugins() -> List[type[UpdateBackend]]:
         try:
             module = importlib.import_module(module_name)
         except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
-            # ImportError: Missing dependencies in the plugin
-            # SyntaxError: The plugin has a typo/bad syntax
-            # RuntimeError/TypeError: Module-level initialization failed
+            # Missing deps, syntax errors, or module-level init failure.
             _log.debug("Skipping plugin %r: %s", module_name, exc)
             continue
 
@@ -179,15 +167,9 @@ def discover_plugins() -> List[type[UpdateBackend]]:
 
 
 def initialize_registry() -> None:
-    """Discover and register all available backend plugins.
-
-    Calls ``discover_plugins()`` to scan the plugins package dynamically —
-    no backend is hardcoded here.  Each discovered class is instantiated
-    inside a ``try/except`` so that a single broken backend cannot prevent
-    the rest from loading.  ``backend_id`` is validated on the live instance
-    before registration.  The idempotency guard ensures this function is
-    safe to call multiple times.
-    """
+    """Discover and register all available backend plugins. Idempotent."""
+    # Each backend is instantiated inside try/except so one broken plugin
+    # can't block the rest.
     reg = get_registry()
     if reg.is_initialized():
         return
@@ -206,9 +188,7 @@ def initialize_registry() -> None:
             reg.register(instance)
             _log.debug("Registered backend: %r", bid)
         except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
-            # AttributeError: backend_id property is missing
-            # TypeError/ValueError: Constructor arguments or return types are wrong
-            # RuntimeError: Backend failed to initialize (e.g. D-Bus connection failed)
+            # Catches missing backend_id, bad constructor args, or init failures.
             _log.warning(
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,

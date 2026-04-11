@@ -160,23 +160,20 @@ def _get_held_packages() -> set[str]:
         )
         return set(result.stdout.split())
     except (OSError, subprocess.SubprocessError):
-        # OSError: 'apt-mark' not found or permission denied
-        # SubprocessError: includes TimeoutExpired if it hits that 10s limit
+        # apt-mark not found, permission denied, or timeout.
         return set()
 
 
 def _get_kept_back_packages() -> set[str]:
-    """Return packages that APT would keep back during a full upgrade.
+    """Return packages APT would keep back during a full-upgrade.
 
-    Runs ``apt-get --simulate full-upgrade`` (no root required for simulation)
-    and parses the "The following packages have been kept back:" stanza.
-    Handles multi-line package lists and multiarch names (e.g. ``libc6:i386``).
+    Runs ``apt-get --simulate full-upgrade`` (no root required) and parses
+    the "The following packages have been kept back:" stanza.
+    Handles multi-line lists and multiarch names (e.g. ``libc6:i386``).
+
+    Uses full-upgrade (not plain upgrade) to match what the root helper runs
+    at install time, so held-dependency constraints are detected correctly.
     Returns an empty set on any error.
-
-    ``full-upgrade`` is used intentionally — it matches the command the root
-    helper runs at install time.  Using plain ``upgrade`` would misclassify
-    packages that need a full-upgrade step (e.g. Wine after unholding
-    winehq-staging) as permanently blocked even when no hold is active.
     """
     try:
         result = subprocess.run(
@@ -199,8 +196,8 @@ def _get_kept_back_packages() -> set[str]:
             in_kept_section = True
             continue
         if in_kept_section:
-            # A blank line or a new capitalised section header ends the stanza.
             if not stripped or stripped[0].isupper():
+                # Blank line or new section header ends the stanza.
                 break
             kept_back.update(stripped.split())
 
@@ -210,9 +207,9 @@ def _get_kept_back_packages() -> set[str]:
 def _apt_cache_depends(held_pkg: str) -> set[str]:
     """Return the set of package names that *held_pkg* depends on.
 
-    Uses ``apt-cache depends`` without a shell.  Returns an empty set on any
-    error.  Results are intentionally *not* cached here — the caller is
-    responsible for caching if repeated calls are expected.
+    Uses ``apt-cache depends``. Returns an empty set on any error.
+    Results are not cached here; the caller may pass a shared *depends_cache*
+    dict to avoid redundant subprocess calls.
     """
     try:
         result = subprocess.run(
@@ -248,15 +245,13 @@ def _guess_blocking_held_package(
 ) -> str | None:
     """Return the single held package most likely blocking *pkg_name*, or None.
 
-    Heuristic (intentionally simple):
-      For each held package, run ``apt-cache depends`` and check whether
-      *pkg_name* appears in its dependency list.  If exactly one held package
-      matches, return its name.  If zero or more than one match, return None
-      so the caller can fall back to the generic message.
+    Simple heuristic: run ``apt-cache depends`` for each held package and check
+    whether *pkg_name* appears in its dependencies.  Returns the name only if
+    exactly one held package matches; otherwise returns None so the caller can
+    fall back to a generic message.
 
-    *depends_cache* may be supplied by the caller as a shared mutable dict so
-    that ``apt-cache depends`` is invoked at most once per held package across
-    many blocked-package lookups in a single pass (e.g. ``get_updates()``).
+    Pass *depends_cache* (a shared mutable dict) to avoid calling
+    ``apt-cache depends`` more than once per held package across a single pass.
     """
     if not held_names:
         return None
@@ -303,34 +298,25 @@ class AptBackend(UpdateBackend):
         return "Debian/Ubuntu Packages"
 
     def is_available(self) -> bool:
-        # If python-apt is imported successfully (it is at the top), APT is available.
+        # python-apt successfully imported at module level — APT is available.
         return True
 
     def build_install_command(self,
                               packages: List[str] | None = None) -> list[str]:
-        """Return a direct argv for privilege-escalated APT install/upgrade.
-
-        The returned list is passed straight to VTE spawn_async — no shell
-        layer is involved.  Privilege path: GUI → pkexec → helper → apt-get.
-        """
+        """Return argv for privilege-escalated APT install/upgrade (passed to VTE, no shell)."""
         return build_upgrade_argv(packages)
 
     def check_busy(self) -> Tuple[bool, str]:
-        """Return ``(is_busy, message)`` using layered /proc-based detection.
+        """Return (is_busy, message) via layered /proc-based detection.
 
-        **Layer 1 — process scan**: walks ``/proc/<pid>/comm`` and
-        ``/proc/<pid>/cmdline`` for each running PID, matching against a broad
-        set of package-manager keywords.  This catches helpers that appear as
-        ``python3`` in *comm* but expose their identity in *cmdline* (e.g.
-        ``apt.systemd.daily``).
+        Layer 1 — process scan: walks /proc/\u27e8pid\u27e9/comm and /proc/\u27e8pid\u27e9/cmdline,
+        matching against APT/dpkg keyword list (catches helpers that appear as
+        python3 in comm but are identified by cmdline, e.g. apt.systemd.daily).
 
-        **Layer 2 — FD scan**: walks ``/proc/<pid>/fd`` symlinks looking for any
-        process that currently has an APT/dpkg lock file open.  This catches
-        processes that hold a lock but are momentarily sleeping and therefore not
-        matched by the name scan.
+        Layer 2 — FD scan: walks /proc/\u27e8pid\u27e9/fd symlinks for any process
+        holding an APT/dpkg lock file open (catches sleeping lock holders).
 
-        Returns ``(False, "")`` when no conflict is found or ``/proc`` is
-        unreadable.
+        Returns (False, "") when no conflict is found or /proc is unreadable.
         """
         ignore_pids = {os.getpid(), os.getppid()}
         ignore_strs = {str(p) for p in ignore_pids} if ignore_pids else set()
@@ -374,11 +360,7 @@ class AptBackend(UpdateBackend):
     @staticmethod
     def _parse_refresh_output(
             result: subprocess.CompletedProcess) -> Tuple[bool, str]:
-        """Interpret a completed apt-get update subprocess result.
-
-        Returns (success, message) — factors out the multi-return logic from
-        refresh() so that method stays within the 6-return limit.
-        """
+        """Interpret a completed apt-get update subprocess result. Returns (success, message)."""
         stdout_text = result.stdout or ""
         stderr_text = result.stderr or ""
         combined_output = stdout_text + "\n" + stderr_text
@@ -407,8 +389,6 @@ class AptBackend(UpdateBackend):
 
         command = [privilege_tool, get_helper_path(), "refresh"]
         if sentinel_path:
-            # Insert --sentinel before the subcommand so the root helper can
-            # signal auth success to the GUI.
             command = [
                 privilege_tool,
                 get_helper_path(), "--sentinel", sentinel_path, "refresh"

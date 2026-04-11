@@ -85,25 +85,23 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.install_in_progress = False
         self.install_output_started = False
         self.install_pulse_source_id: int | None = None
-        # Sentinel file + poller for pkexec auth handshake (install).
+        # pkexec auth sentinel + poller (install).
         self._auth_sentinel_path: str | None = None
         self._auth_poll_source_id: int | None = None
-        # Sentinel file + poller for pkexec auth handshake (hold/unhold).
+        # pkexec auth sentinel + poller (hold/unhold).
         self._hold_sentinel_path: str | None = None
         self._hold_poll_source_id: int | None = None
-        # Sentinel file + poller for pkexec auth handshake (refresh).
+        # pkexec auth sentinel + poller (refresh).
         self._refresh_sentinel_path: str | None = None
         self._refresh_poll_source_id: int | None = None
-        # Explicit install/auth state machine.
-        # Valid transitions: IDLE → AUTH_PENDING → RUNNING → COMPLETE | FAILED
+        # State machine: IDLE → AUTH_PENDING → RUNNING → COMPLETE | FAILED
         self.install_state: str = "IDLE"
 
         self.prefs = self._load_prefs()
         # Guard flag used by _set_show_descriptions() to suppress menu re-entry.
         self._syncing_desc = False
 
-        # Show a minimal window immediately so the desktop feels responsive,
-        # then let the event loop schedule the full heavy build.
+        # Show a bare window immediately; defer the heavy build to the event loop.
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.add(self.main_box)
         self.show_all()
@@ -111,11 +109,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         GLib.idle_add(self._build_full_ui, deb_path)
 
     def _build_full_ui(self, deb_path: str | None) -> bool:
-        """Heavy UI + registry initialisation, deferred via GLib.idle_add.
-
-        Builds every widget, wires signals, then shows the completed window.
-        Must return False so GLib does not re-schedule it.
-        """
+        """Build all widgets and wire signals. Deferred via GLib.idle_add; returns False."""
+        # Returns False so GLib won't reschedule this one-shot idle callback.
         initialize_registry()
 
         self.store = Gtk.ListStore(
@@ -334,8 +329,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.tree.set_vexpand(True)
         self.tree.set_hexpand(True)
         self.tree.set_enable_search(True)
-        # Both flags together: fixed height allows a faster rendering path;
-        # all columns MUST use FIXED sizing for this mode to work correctly.
+        # Fixed height mode is faster; requires all columns to use FIXED sizing.
         self.tree.set_fixed_height_mode(True)
         self.tree.set_hover_selection(False)
 
@@ -364,9 +358,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                                          self._toggle_cell_data_func)
         self.tree.append_column(toggle_column)
 
-        # Package column — always uses Pango markup so the name stays bold.
-        # The markup string stored in COL_PACKAGE is regenerated when the
-        # Show Descriptions preference changes (see on_toggle_descriptions).
+        # COL_PACKAGE always uses Pango markup; regenerated on Show Descriptions toggle.
         self.pkg_renderer = Gtk.CellRendererText()
         self.pkg_renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
         self.pkg_renderer.set_property("ellipsize-set", True)
@@ -571,8 +563,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             if changed:
                 self._save_prefs()
                 self.filter_model.refilter()
-                # Recompute the real status first so the restore is accurate,
-                # then flash "Preferences saved." and revert after 3 seconds.
+                # Flash "Preferences saved." briefly, then restore the real count status.
                 self._restore_current_update_status()
                 self._set_status(_("Preferences saved."))
                 GLib.timeout_add_seconds(3, self._restore_current_update_status)
@@ -691,15 +682,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._set_show_descriptions(check.get_active())
 
     def _set_show_descriptions(self, enabled: bool) -> None:
-        """Single source of truth for the show-descriptions preference.
-
-        Updates the pref, persists it, syncs the View-menu CheckMenuItem
-        (blocking its toggled signal via a flag to avoid recursion), and
-        applies the markup refresh immediately.
-        """
+        """Update and persist the show-descriptions pref, sync the menu item, rebuild markup."""
+        # _syncing_desc blocks on_toggle_descriptions re-entry during the menu sync.
         self.prefs["show_descriptions"] = enabled
         self._save_prefs()
-        # Set the guard flag so on_toggle_descriptions ignores this programmatic change.
         self._syncing_desc = True
         try:
             self.show_desc_menu_item.set_active(enabled)
@@ -708,11 +694,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._apply_show_descriptions()
 
     def _apply_show_descriptions(self) -> None:
-        """Rebuild COL_PACKAGE markup for all rows using the current pref.
-
-        Only the markup string is updated — selection state, versions, and
-        all other columns are untouched.
-        """
+        """Rebuild COL_PACKAGE markup for all rows. Only the markup string changes."""
+        # freeze_notify/thaw_notify batches TreeView change signals.
         show_desc = self.prefs.get("show_descriptions", True)
         self.store.freeze_notify()
         try:
@@ -800,12 +783,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         return column
 
     def _apply_adaptive_window_size(self) -> None:
-        """Choose a sane initial window size based on the current monitor workarea.
-
-        Uses the monitor workarea so panels/docks are respected. The window starts
-        at a comfortable preferred size on normal desktops, but clamps down on
-        smaller screens / VMs instead of assuming lots of space.
-        """
+        """Set initial window size, clamped to the monitor workarea (respects panels/docks)."""
+        # Falls back to preferred size if GDK can't report workarea dimensions.
         preferred_w = 1100
         preferred_h = 700
         min_w = 760
@@ -816,14 +795,13 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         width = preferred_w
         height = preferred_h
 
-        # Catching specific GDK or logic errors only
+        # Catch GDK errors; fall back to preferred size.
         try:
             screen = Gdk.Screen.get_default()
             if screen is not None:
                 monitor_num = max(screen.get_primary_monitor(), 0)
                 workarea = screen.get_monitor_workarea(monitor_num)
 
-                # Ensure we have valid dimensions before calculating
                 if workarea and workarea.width > 0 and workarea.height > 0:
                     max_w = max(min_w, workarea.width - margin)
                     max_h = max(min_h, workarea.height - margin)
@@ -934,7 +912,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 "%(message)s · Cached data — refresh to check for newer updates"
             ) % {"message": message}
 
-        # Give a lightweight hint if optional backends found anything.
+        # Note any optional backends that contributed results.
         extras = []
         for backend, label in (
             ("snap", "Snap"),
@@ -948,7 +926,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 "message": message,
                 "extras": ", ".join(extras)
             }
-        # Append a hint when held/blocked rows are hidden.
+        # Append a count of hidden held/blocked rows.
         if not self.prefs.get("show_held_packages", False):
             hidden = sum(1 for row in self.store
                          if row[self.COL_HELD] in (CONSTRAINT_HELD,
@@ -963,8 +941,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 }
                 message = f"{message} · {hint}"
         self._set_status(message)
-        # Derive badge severity from the already-populated store (highest wins).
-        # Held packages are excluded — they are non-actionable.
+        # Badge severity = highest severity across actionable (non-held) rows.
         from bodhi_update.tray import _pkg_severity  # noqa: PLC0415
         severity = "low"
         actionable_count = 0
@@ -982,14 +959,12 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._notify_tray(actionable_count, severity)
 
     def _refresh_selection_status(self) -> None:
-        """Update the status bar to reflect the current checkbox selection.
+        """Update the status bar with selected count + download size.
 
-        If nothing is selected the status bar is left unchanged.
-        Otherwise shows the selected count and a download summary:
-          - unknown-only  →  N selected · Download: —
-          - known-only    →  N selected · Download: 42.2 KB
-          - mixed         →  N selected · Download: 42.2 KB+
-        A backend is considered "size-reporting" when its raw size > 0.
+        No-op if nothing is selected.  Download summary:
+          unknown only  →  —
+          known only    →  42.2 KB
+          mixed         →  42.2 KB+  (non-APT backends don't report sizes)
         """
         total_selected = 0
         known_bytes = 0  # sum of raw sizes from size-reporting rows
@@ -1005,12 +980,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 has_known = True
                 known_bytes += raw
             else:
-                # raw == 0 and backend != "apt" means size is unknown, not zero.
-                # APT rows with size == 0 are genuinely zero-byte (rare/meta pkgs).
+                # Non-APT size==0 means unknown; APT size==0 is genuinely free.
                 b_id = row[self.COL_BACKEND]
                 if b_id != "apt":
                     has_unknown = True
-                # APT size==0 contributes neither known nor unknown (truly free).
 
         if total_selected == 0:
             return
@@ -1071,8 +1044,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         menu.popup_at_pointer(event)
 
     def _reload_apt_rows(self) -> None:  # pylint: disable=too-many-locals
-        """Refresh APT rows only, preserving non-APT rows already in the store."""
-        # Snapshot non-APT rows so they survive the store clear.
+        """Re-query APT rows only, leaving non-APT rows intact."""
+        # Save non-APT rows before clearing the store.
         non_apt = [
             list(row) for row in self.store if row[self.COL_BACKEND] != "apt"
         ]
@@ -1094,7 +1067,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.store.freeze_notify()
         try:
             self.store.clear()
-            # Re-insert non-APT rows verbatim.
             for row in non_apt:
                 self.store.append(row)
             # Insert fresh APT rows.
@@ -1131,8 +1103,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         running_msg = _(
             "Locking package...") if hold else _("Unlocking package...")
 
-        # Use a sentinel file (same pattern as the install flow) so we can
-        # distinguish "waiting for pkexec auth" from "command is running".
+        # Sentinel file distinguishes "waiting for pkexec auth" from "running".
         sentinel = (
             f"/tmp/bodup-hold-{os.getpid()}-{random.randint(0, 0xFFFFFF):06x}.ok"
         )
@@ -1148,15 +1119,13 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                                        hold=hold,
                                        sentinel_path=sentinel)
             except RuntimeError as exc:
-                # Command can't be built — no subprocess will run, so the
-                # sentinel will never be written.  Cancel everything.
+                # Build failed — sentinel will never be written; cancel poller.
                 self._cancel_hold_sentinel()
                 GLib.idle_add(self._set_status, str(exc))
                 return
             result = subprocess.run(argv, capture_output=True, check=False)
-            # If the sentinel file still exists the poller never got to consume
-            # it (apt-mark finished within a single 100ms poll interval).
-            # Emit the running message now before posting success/failure.
+            # If sentinel still exists, apt-mark finished before the first poll tick.
+            # Emit the running message before posting success/failure.
             _sentinel_path = self._hold_sentinel_path
             if _sentinel_path and os.path.exists(_sentinel_path):
                 try:
@@ -1183,11 +1152,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         threading.Thread(target=_worker, daemon=True).start()
 
     def _poll_hold_sentinel(self, running_msg: str) -> bool:
-        """GLib timeout: fires every 100 ms while waiting for hold/unhold pkexec auth.
-
-        When the root helper writes the sentinel file, auth has succeeded and
-        the command is now running — update the status bar and stop polling.
-        """
+        """100 ms GLib poller: flip status bar to running when sentinel appears."""
+        # Sentinel written by root helper once pkexec auth succeeds.
         path = self._hold_sentinel_path
         if path is None:
             return False  # already cancelled
@@ -1203,22 +1169,16 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         return True
 
     def _stop_hold_poller(self) -> None:
-        """Stop the hold sentinel GLib poller without touching the sentinel file.
-
-        Called by the worker after subprocess returns so the GTK poller
-        can still observe (and consume) the sentinel file on its next tick.
-        """
+        """Stop the hold sentinel poller without touching the file."""
+        # Called from the worker thread; leaves the file for the GTK poller to consume.
         src = getattr(self, "_hold_poll_source_id", None)
         if src is not None:
             GLib.source_remove(src)
             self._hold_poll_source_id = None
 
     def _cancel_hold_sentinel(self) -> None:
-        """Stop the hold sentinel poller AND clean up any leftover file.
-
-        Called only when the sentinel will never be written (e.g. command
-        could not be built, or the user cancelled pkexec before auth).
-        """
+        """Stop the hold sentinel poller and remove any leftover file."""
+        # Used when the sentinel will never be written (build error, cancelled auth).
         self._stop_hold_poller()
         path = getattr(self, "_hold_sentinel_path", None)
         if path:
@@ -1229,11 +1189,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 pass
 
     def _poll_refresh_sentinel(self) -> bool:
-        """GLib timeout: fires every 100 ms while waiting for refresh pkexec auth.
-
-        When the root helper writes the sentinel file, auth has succeeded and
-        apt-get update is now running — update the status bar and stop polling.
-        """
+        """100 ms GLib poller: flip status bar to loading once refresh sentinel appears."""
+        # Sentinel written by root helper once pkexec auth succeeds.
         path = self._refresh_sentinel_path
         if path is None:
             return False  # already cancelled or consumed
@@ -1453,18 +1410,15 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._set_refresh_busy(False)
         self._set_updates_loading(False)
 
-        # Always populate the store, even on fatal failure
+        # Populate store and count status even on failure (fall back to cached data).
         self._populate_store(updates)
-
-        # Always update the count status so the total "N updates available" is shown.
-        # If the refresh failed the displayed data comes from the prior cache.
         actionable = sum(
             1 for u in updates
             if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
         self._update_count_status(actionable, total_bytes, cached=not ok)
 
         if not ok and message:
-            # Append the failure message to the status rather than overwriting the count
+            # Append failure detail without clobbering the update count.
             current_status = self.status_label.get_text()
             self._set_status(_("%(current_status)s — Warning: %(message)s") % {
                 "current_status": current_status,
@@ -1477,7 +1431,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         messages = []
         backends = get_registry().get_all_backends()
 
-        # Track which backends fully succeeded
         successful_backends = 0
 
         sentinel = self._refresh_sentinel_path
@@ -1490,12 +1443,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             if not ok and msg:
                 messages.append(msg)
 
-        # Stop the poller before the final sentinel-consume check so it cannot
-        # fire and double-post after we handle the file below.
+        # Stop the poller before consuming the sentinel to avoid double-posting.
         self._stop_refresh_poller()
 
-        # Fallback consume: if the sentinel still exists the poller never got
-        # a chance to observe it (apt-get update finished in < 100 ms).
+        # If sentinel still exists, apt-get update finished before the first poll tick.
         if sentinel and os.path.exists(sentinel):
             try:
                 os.unlink(sentinel)
@@ -1514,13 +1465,13 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 total_bytes += b_bytes
                 successful_backends += 1
             except (OSError, RuntimeError, ValueError) as exc:
-                # Catching specific system/data errors to report to UI
+                # Report per-backend failures in the UI status.
                 log.error("Backend %s get_updates failed: %s",
                           backend.display_name, exc)
                 messages.append(
                     f"{backend.display_name} get_updates failed. ({exc})")
 
-        # Only hard-fail if NO enabled backend succeeded
+        # Hard-fail only if every enabled backend failed.
         fatal_fail = (successful_backends == 0 and len(backends) > 0)
 
         final_msg = _("Package lists refreshed.")
@@ -1550,7 +1501,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._set_install_busy(True)
         self.install_output_started = False
         self._active_privilege_tool = None
-        # Reset sentinel/poller state for fresh install.
         self._auth_sentinel_path = None
         if self._auth_poll_source_id is not None:
             GLib.source_remove(self._auth_poll_source_id)
@@ -1579,11 +1529,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             pass
 
     def _mark_install_running(self) -> None:
-        """Transition the install UI from AUTH_PENDING to RUNNING.
-
-        Single gate: called by the sentinel poller (pkexec) or the VTE marker
-        watcher (sudo/doas) once auth is confirmed.  Idempotent.
-        """
+        """Transition install UI from AUTH_PENDING → RUNNING. Idempotent."""
+        # Called by the sentinel poller (pkexec) or the VTE marker watcher (sudo/doas).
         if self.install_state != "AUTH_PENDING":
             return
 
@@ -1605,12 +1552,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 150, self._pulse_install_progress)
 
     def _on_spawn_complete(self, terminal, pid, error, user_data=None):
-        """VTE spawn_async callback — (terminal, pid, error, user_data).
+        """VTE spawn_async callback — catches hard spawn failures.
 
-        Fires when the privilege tool process is exec'd by VTE's PTY layer.
-        Used to catch hard spawn failures (e.g. pkexec binary not found).
-        Auth success is detected by the sentinel poller (pkexec) or the VTE
-        marker watcher (sudo/doas), not here.
+        Auth success is handled separately by the sentinel poller (pkexec)
+        or the VTE marker watcher (sudo/doas).
         """
         if error is not None:
             log.error(_("Spawn failed: %s"), error.message)
@@ -1631,11 +1576,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         log.info(_("Install process spawned (pid %s)."), pid)
 
     def _spawn_install_command(self, argv: list[str]) -> None:
-        """Spawn *argv* directly in the embedded VTE terminal.
+        """Spawn argv directly in the VTE terminal (no shell).
 
-        No shell is involved: the first element of *argv* is exec'd directly
-        by VTE's PTY layer. For privileged APT operations this means:
-            GUI → pkexec → /usr/libexec/bodhi-update-manager-root → apt-get
+        Privilege chain: GUI → pkexec → helper → apt-get
         """
         envv = [f"{k}={v}" for k, v in os.environ.items()]
 
@@ -1673,12 +1616,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.install_terminal.grab_focus()
 
     def _poll_auth_sentinel(self) -> bool:
-        """GLib timeout callback: check if the sentinel file has appeared.
-
-        Called every 100 ms while waiting for pkexec auth.  When the root
-        helper writes the sentinel file we delete it and transition to RUNNING.
-        Returns False (stopping the source) once no longer in AUTH_PENDING.
-        """
+        """100 ms GLib poller: transition to RUNNING when auth sentinel appears."""
+        # Returns False once no longer in AUTH_PENDING, stopping the source.
         if self.install_state != "AUTH_PENDING":
             self._auth_poll_source_id = None
             return False
@@ -1715,24 +1654,20 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         log.debug(_("Command: %s"), argv)
 
         self._start_install_progress(title)
-        # Store the tool used for THIS install so callbacks don't re-lookup.
+        # Cache the tool for this install run so callbacks don't re-lookup.
         self._active_privilege_tool = find_privilege_tool()
 
         if self._active_privilege_tool == "pkexec":
-            # Pass the sentinel path as a CLI argument to bypass pkexec's
-            # environment variable stripping.
+            # pkexec strips env vars, so pass the sentinel path as a CLI arg instead.
             sentinel = f"/tmp/bodup-auth-{os.getpid()}-{random.randint(0, 0xFFFFFF):06x}.ok"
             self._auth_sentinel_path = sentinel
-            # Insert --sentinel <path> immediately after the helper path.
-            # argv layout: [pkexec, helper, subcommand, ...]
-            # becomes:     [pkexec, helper, --sentinel, path, subcommand, ...]
+            # [pkexec, helper, subcommand, ...] → [pkexec, helper, --sentinel, path, subcommand, ...]
             guarded_argv = [argv[0], argv[1], "--sentinel", sentinel, *argv[2:]]
             self._spawn_install_command(guarded_argv)
             self._auth_poll_source_id = GLib.timeout_add(
                 100, self._poll_auth_sentinel)
         else:
-            # sudo/doas: auth happens inside the VTE — reveal it immediately,
-            # then transition to RUNNING right away (no marker needed).
+            # sudo/doas: auth happens in the VTE; reveal it and go straight to RUNNING.
             self._spawn_install_command(argv)
             self._handle_terminal_auth_fallback()
             GLib.idle_add(self._mark_install_running)
@@ -1744,7 +1679,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         try:
             argv = build_deb_install_argv(deb_path)
         except (RuntimeError, ValueError, FileNotFoundError) as exc:
-            # Show a minimal install page so the error is visible, then bail.
+            # Show the install page so the error is visible, then bail.
             self._start_install_progress(
                 _("Installing %(deb_name)s...") % {"deb_name": deb_name})
             self._set_install_busy(False)
@@ -1765,7 +1700,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.install_phase_label.set_text(_("Updates installed successfully."))
         self._set_status(_("Ready"))
 
-        # Show the reboot banner if the system has flagged a restart is needed.
         if reboot_required():
             self.reboot_info_bar.show()
 
@@ -1780,21 +1714,16 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             _("Update failed. Exit code: %(exit_code)s. See Details below.")
             % {"exit_code": exit_code})
 
-        # Always reveal the terminal so the error output is visible.
         self.install_details_revealer.set_reveal_child(True)
         self.show_details_button.set_active(True)
         self.show_details_button.set_label(_("Hide Details"))
         self._set_status(_("Update failed. Exit code: %(exit_code)s") % {"exit_code": exit_code})
 
     def _terminal_text(self) -> str:
-        """Return the current plain-text contents of the VTE terminal.
+        """Return plain text from the VTE terminal, or '' on error.
 
-        Returns an empty string on any error or if the terminal is blank.
-
-        get_text() must be called with attributes=None to satisfy the
-        vte_terminal_get_text internal assertion 'attributes == nullptr'.
-        Passing only the is_selected callback causes PyGObject to supply a
-        non-null GArray, which triggers that assertion.
+        Must pass attributes=None to avoid a vte_terminal_get_text assertion
+        failure caused by PyGObject supplying a non-null GArray pointer.
         """
         try:
             result = self.install_terminal.get_text(lambda *a: True, None)
@@ -1837,11 +1766,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.refresh_in_progress or self.install_in_progress:
             return
 
-        # Path is relative to the filter_model, translate to child store.
         filter_iter = self.filter_model.get_iter(path)
         child_iter = self.filter_model.convert_iter_to_child_iter(filter_iter)
 
-        # Do not allow selecting held or blocked packages — non-actionable.
         if self.store[child_iter][self.COL_HELD] in (CONSTRAINT_HELD,
                                                      CONSTRAINT_BLOCKED):
             return
@@ -1863,8 +1790,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.refresh_in_progress or self.install_in_progress:
             return
 
-        # Collect paths first for safe iteration when modifying underlying store.
-        # Skip held packages — they cannot be installed.
+        # Snapshot paths before modifying the store; skip held/blocked rows.
         paths = [row.path for row in self.filter_model]
         for path in paths:
             f_iter = self.filter_model.get_iter(path)
@@ -1881,11 +1807,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.filter_model.refilter()
 
     def on_toggle_descriptions(self, checkmenuitem: Gtk.CheckMenuItem) -> None:
-        """View-menu CheckMenuItem — delegate to the shared helper.
-
-        Guarded by _syncing_desc to prevent re-entry when _set_show_descriptions
-        programmatically updates the menu item state.
-        """
+        """View-menu handler for Show Descriptions. Re-entry guarded by _syncing_desc."""
+        # _syncing_desc is set by _set_show_descriptions when it syncs the menu item.
         if self._syncing_desc:
             return
         self._set_show_descriptions(checkmenuitem.get_active())
@@ -1895,7 +1818,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.refresh_in_progress or self.install_in_progress:
             return
 
-        # Check all enabled backends to see if any package manager is busy
         for backend in get_registry().get_all_backends():
             is_busy, message = backend.check_busy()
             if is_busy:
@@ -1903,15 +1825,13 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 return
 
         self._set_refresh_busy(True)
-        # Show the loading stack + spinner immediately but keep the status as
-        # "Waiting for authorization..." until auth actually succeeds.
+        # Show spinner immediately; status stays "Waiting..." until auth succeeds.
         self.updates_stack.set_visible_child_name("loading")
         self._loading_spinner.start()
         self._updates_loading = True
         self._update_action_sensitivity()
         self._set_status(_("Waiting for authorization..."))
-        # Generate a fresh sentinel for this refresh run and start a poller
-        # so "Loading updates..." appears as soon as auth succeeds.
+        # Fresh sentinel + poller so "Loading updates..." fires as soon as auth succeeds.
         self._refresh_sentinel_path = (
             f"/tmp/bodup-refresh-{os.getpid()}-{random.randint(0, 0xFFFFFF):06x}.ok"
         )
@@ -1924,11 +1844,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
     def _build_install_target_command(
             self, grouped_packages: Dict[str, List[str]] | None) -> list[str]:
-        """
-        Produce an install command for the specified backend group.
+        """Return install argv for the selected packages.
 
-        Raises RuntimeError for multi-backend simultaneous installs or an
-        unrecognised backend ID.
+        Raises RuntimeError for multi-backend selections or unknown backend IDs.
         """
         if not grouped_packages:
             registry = get_registry()
@@ -1985,20 +1903,15 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.install_in_progress:
             return
 
-        # Clear all checkbox state immediately so no stale checked rows are
-        # visible while the async refresh is pending.
+        # Clear selection so no stale checkboxes are visible during reload.
         for row in self.store:
             row[self.COL_SELECTED] = False
 
         self.stack.set_visible_child_name("updates")
         self._update_action_sensitivity()
-        # Enter the loading state immediately so the user sees activity
-        # as soon as the updates view snaps back into place.
         self._set_updates_loading(True)
-        # Use the non-privileged cached load path only — on_check_updates
-        # would trigger backend.refresh() which prompts for pkexec
-        # authentication on the APT backend, which is unacceptable UX
-        # during simple back-navigation after install.
+        # Use the cached (non-privileged) path — on_check_updates would prompt
+        # for pkexec auth, which is wrong after a simple back-navigation.
         threading.Thread(target=self._load_cached_updates_on_startup,
                          daemon=True).start()
 
@@ -2043,15 +1956,11 @@ class UpdateManagerApplication(Gtk.Application):
         return 0
 
     def do_activate(self) -> None:  # type: ignore[override]
-        """First activation: create window (normal) or tray only (tray mode).
+        """Create window (normal mode) or tray only (--tray mode).
 
-        In tray mode the window is NOT created here at all — GTK cannot
-        implicitly show a window that doesn't exist yet.  The tray icon will
-        call get_or_create_window() lazily when the user requests it.
-
-        On subsequent activations (e.g. user re-launches the binary while the
-        app is already running) we create/show the window unconditionally so
-        the user always gets a visible result.
+        In tray mode the window is deferred to get_or_create_window() so GTK
+        doesn't implicitly show it at startup.  On re-activation (second launch
+        while already running) the window is always raised.
         """
         if self._window is None:
             if self._tray_mode:
@@ -2065,7 +1974,7 @@ class UpdateManagerApplication(Gtk.Application):
             self._window.show_all()
             return
 
-        # Already running → raise the window.
+        # Already running — raise the existing window.
         win = self.get_or_create_window()
         win.show_all()
         win.present()
@@ -2075,7 +1984,7 @@ class UpdateManagerApplication(Gtk.Application):
         if self._window is None:
             self._window = UpdateManagerWindow(deb_path=self._deb_path)
             self._window.set_application(self)
-            # Intercept close: hide instead of destroy while the tray is active.
+            # Intercept delete-event: hide instead of destroy while tray is active.
             self._window.connect("delete-event", self._on_window_delete)
         return self._window
 
@@ -2111,8 +2020,7 @@ def main() -> None:
     """Entry point: parse argv, create the application, and run."""
     import sys  # noqa: PLC0415
 
-    # Sniff positional args for a .deb path only — --tray is handled by
-    # do_command_line() so that GTK sees it before do_activate() fires.
+    # --tray is consumed by do_command_line(); only look for a .deb path here.
     deb_path: str | None = None
     for arg in sys.argv[1:]:
         if arg.lower().endswith(".deb"):

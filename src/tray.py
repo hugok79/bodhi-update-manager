@@ -1,9 +1,8 @@
 """Integrated tray indicator for the Update Manager.
 
-Owns exactly one tray icon per application instance.  All menu actions
-lazily create the UpdateManagerWindow on first use via the application's
-get_or_create_window() helper — the window is never pre-created in tray
-mode, so GTK cannot implicitly show it at startup.
+Owns one tray icon per application instance. Actions lazily create the
+UpdateManagerWindow via get_or_create_window() — the window is not
+pre-created in tray mode, so GTK can't implicitly show it at startup.
 
 Indicator backend priority:
   1. Gtk.StatusIcon         — preferred on Bodhi/Moksha; badge fully supported
@@ -60,8 +59,7 @@ _SEVERITY_COLORS = {
         (80, 210, 230, 255), (120, 220, 120, 255)),  # cyan fill  / green ring
 }
 
-# APT package name prefixes that warrant amber (medium) severity.
-# Keep this list intentionally small: core platform plumbing only.
+# Keep this list small: core platform plumbing only.
 _MEDIUM_PREFIXES = (
     "linux-",
     "systemd",
@@ -102,7 +100,7 @@ def _read_pref(key: str, default: bool = True) -> bool:
             if isinstance(data, dict):
                 return bool(data.get(key, default))
     except (OSError, json.JSONDecodeError, AttributeError):
-        # File issues, bad JSON, or .get() failing on non-dict data
+        # File missing, bad JSON, or non-dict data.
         pass
 
     return default
@@ -170,12 +168,10 @@ def _add_badge_dot(  # pylint: disable=too-many-locals
 
 
 class TrayIcon:
-    """System-tray icon whose actions operate on the application's window.
+    """System-tray icon that operates on the application window.
 
-    Receives the *application* (not the window) so it can lazily create the
-    window on demand instead of requiring it to exist at construction time.
-
-    Call :meth:`destroy` to remove the icon when the application exits.
+    Receives the application object (not the window) so the window can be
+    created lazily on first use.  Call :meth:`destroy` when the app exits.
     """
 
     _ICON_NAME = "bodhi-update-manager"
@@ -191,11 +187,11 @@ class TrayIcon:
         self._status_icon = None  # Gtk.StatusIcon handle (preferred)
         self._indicator = None  # AppIndicator3 handle (fallback)
         self._poll_source_id: int | None = None
+        self._last_count: int = 0  # most recent badge count from set_update_count()
 
         menu = self._build_menu()
 
-        # Prefer Gtk.StatusIcon: it works on Moksha/Bodhi and supports the
-        # pixbuf badge.  Fall back to AppIndicator on desktops that need it.
+        # Prefer Gtk.StatusIcon (badge supported); fall back to AppIndicator.
         try:
             icon = Gtk.StatusIcon()
             icon.set_from_icon_name(self._ICON_NAME)
@@ -206,8 +202,7 @@ class TrayIcon:
             self._status_icon = icon
             self._menu = menu  # keep menu alive as long as the icon is alive
         except (AttributeError, TypeError, RuntimeError):
-            # StatusIcon is missing from the library or rejected by the Display Server.
-            # Fall back to AppIndicator on desktops that need it.
+            # StatusIcon unavailable; fall back to AppIndicator.
             if _APP_INDICATOR is not None:
                 self._indicator = _APP_INDICATOR.Indicator.new(
                     self._ICON_NAME,
@@ -218,7 +213,6 @@ class TrayIcon:
                     _APP_INDICATOR.IndicatorStatus.ACTIVE)
                 self._indicator.set_menu(menu)
 
-        # Schedule an initial badge check shortly after startup, then periodically.
         GLib.timeout_add_seconds(self._INITIAL_DELAY, self._on_poll_timer)
 
     # ------------------------------------------------------------------
@@ -257,13 +251,27 @@ class TrayIcon:
         win.present()
 
     def _toggle_window(self) -> None:
-        """Toggle window visibility."""
+        """Toggle window visibility.
+
+        When opening the window while the badge indicates pending updates,
+        schedule a background refresh so the visible data matches the tray
+        state.  The window is always shown immediately using cached data.
+        """
         win = self._app.get_or_create_window()
         if win.get_visible():
             win.hide()
         else:
             win.show_all()
             win.present()
+            if self._last_count > 0:
+                GLib.idle_add(self._maybe_trigger_refresh, win)
+
+    def _maybe_trigger_refresh(self, win: object) -> bool:
+        """Idle callback: start a background refresh if one isn't already running."""
+        if not getattr(win, "refresh_in_progress", False) and \
+                not getattr(win, "install_in_progress", False):
+            win.on_check_updates(None)  # type: ignore[union-attr]
+        return False
 
     def _check_updates(self) -> None:
         """Show the window and trigger an update check."""
@@ -301,7 +309,7 @@ class TrayIcon:
         """GLib timer callback: start a daemon thread to query cached updates."""
         if _read_pref("show_notifications"):
             threading.Thread(target=self._poll_worker, daemon=True).start()
-        # Re-arm after _POLL_INTERVAL; use a one-shot source that reschedules itself.
+        # Re-arm: one-shot source reschedules itself after each poll.
         self._poll_source_id = GLib.timeout_add_seconds(self._POLL_INTERVAL,
                                                         self._on_poll_timer)
         return False  # remove the current one-shot source
@@ -309,7 +317,7 @@ class TrayIcon:
     def _poll_worker(self) -> None:
         """Read cached update state from all backends (no refresh/privilege tool).
 
-        Runs on a daemon thread; posts badge update back to the main loop.
+        Runs on a daemon thread; posts badge update back to the main loop via GLib.idle_add.
         """
         try:
             from bodhi_update.backends import get_registry, initialize_registry  # noqa: PLC0415
@@ -333,12 +341,11 @@ class TrayIcon:
                         elif s == "medium" and severity != "high":
                             severity = "medium"
                 except (OSError, RuntimeError, ValueError, AttributeError):
-                    # Individual backend failed; skip it and try the others
+                    # Skip failed backends and keep going.
                     continue
             GLib.idle_add(self.set_update_count, count, severity)
         except (ImportError, OSError, RuntimeError, AttributeError):
-            # Registry init failed or GLib/GObject bridge issues
-            # Never crash the tray over a background check.
+            # Don't let a background check take down the tray.
             pass
 
     # ------------------------------------------------------------------
@@ -346,12 +353,8 @@ class TrayIcon:
     # ------------------------------------------------------------------
 
     def set_update_count(self, count: int, severity: str = "medium") -> None:
-        """Apply (count > 0) or clear (count == 0) the severity-colored badge dot.
-
-        Badge is only applied on the Gtk.StatusIcon path via set_from_pixbuf().
-        The AppIndicator path does not support pixbuf injection and gracefully
-        keeps the plain icon name instead — no temp files, no crash.
-        """
+        """Update or clear the badge dot. AppIndicator path degrades gracefully (no pixbuf)."""
+        self._last_count = count  # persist so _toggle_window can read it
         if self._status_icon is None and self._indicator is None:
             return
 
@@ -373,14 +376,10 @@ class TrayIcon:
                 self._status_icon.set_from_pixbuf(pixbuf)
                 self._status_icon.set_tooltip_text(tooltip)
 
-            # AppIndicator: pixbuf badge not supported without temp files.
-            # Just ensure the icon name is set correctly; badge is degraded.
+            # AppIndicator doesn't support pixbuf badges; just keep the icon name current.
             if self._indicator is not None:
                 self._indicator.set_icon_full(self._ICON_NAME, tooltip)
         except (AttributeError, TypeError, GLib.Error):
-            # AttributeError: Missing Gtk/AppIndicator methods
-            # TypeError: Pixbuf/Icon name mismatch
-            # GLib.Error: Gtk.IconTheme failed to find/load the icon
             pass
 
     # ------------------------------------------------------------------
