@@ -185,13 +185,12 @@ msgid "Apply"
 msgstr "Použít"
 
 #: src/app.py:520
-#, fuzzy
 msgid "Show notifications"
-msgstr "Zobrazit popisy"
+msgstr "Zobrazit oznámení"
 
 #: src/app.py:524
 msgid "Show held/blocked packages"
-msgstr ""
+msgstr "Zobrazit podržené/blokované balíčky"
 
 #: src/app.py:532
 msgid "Show Snap updates"
@@ -310,9 +309,9 @@ msgstr "%(message)s (zahrnuje %(extras)s)"
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%(n)d podržený/blokovaný balíček skryt"
+msgstr[1] "%(n)d podržené/blokované balíčky skryty"
+msgstr[2] "%(n)d podržených/blokovaných balíčků skryto"
 
 #: src/app.py:1025
 #, python-format
@@ -324,12 +323,11 @@ msgstr[2] "%(count)d aktualizací vybráno · Stáhnout: %(size)s"
 
 #: src/app.py:1060
 msgid "Unhold package"
-msgstr ""
+msgstr "Uvolnit podržení balíčku"
 
 #: src/app.py:1060
-#, fuzzy
 msgid "Hold package"
-msgstr "Balíček"
+msgstr "Podržet balíček"
 
 #: src/app.py:1112 src/app.py:1352 src/app.py:1386
 msgid "System package"
@@ -337,39 +335,37 @@ msgstr "Systémový balíček"
 
 #: src/app.py:1132
 msgid "Locking package..."
-msgstr ""
+msgstr "Uzamykání balíčku..."
 
 #: src/app.py:1132
 msgid "Unlocking package..."
-msgstr ""
+msgstr "Odemykání balíčku..."
 
 #: src/app.py:1143 src/app.py:1566 src/app.py:1671 src/app.py:1912
-#, fuzzy
 msgid "Waiting for authorization..."
 msgstr "Čeká se na ověření..."
 
 #: src/app.py:1172
 msgid "apt-mark failed (unknown error)"
-msgstr ""
+msgstr "apt-mark selhal (neznámá chyba)"
 
 #: src/app.py:1176
 #, python-format
 msgid "Package '%(name)s' is now held."
-msgstr ""
+msgstr "Balíček '%(name)s' je nyní podržen."
 
 #: src/app.py:1178
 #, python-format
 msgid "Package '%(name)s' is no longer held."
-msgstr ""
+msgstr "Balíček '%(name)s' již není podržen."
 
 #: src/app.py:1337
-#, fuzzy
 msgid "Held package"
-msgstr "Systémový balíček"
+msgstr "Podržený balíček"
 
 #: src/app.py:1346
 msgid "Blocked by held package or dependency constraints"
-msgstr ""
+msgstr "Blokováno podrženým balíčkem nebo omezeními závislostí"
 
 #: src/app.py:1369
 msgid "N/A"
@@ -412,9 +408,8 @@ msgid "Hide Details"
 msgstr "Skrýt podrobnosti"
 
 #: src/app.py:1616
-#, fuzzy, python-format
 msgid "Spawn failed: %s"
-msgstr "Spuštění procesu selhalo: %(exc)s"
+msgstr "Spuštění procesu selhalo: %s"
 
 #: src/app.py:1621 src/app.py:1752 src/app.py:1778
 msgid "Failed"
@@ -533,15 +528,13 @@ msgstr "Instalují se vybrané aktualizace..."
 #: data/applications//bodhi-update-manager.in:6
 #: data/applications//bodhi-update-manager-tray.in:6
 msgid "Install system updates and local packages for Bodhi Linux"
-msgstr ""
+msgstr "Instalovat systémové aktualizace a lokální balíčky pro Bodhi Linux"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:1
 msgid "Run the Update Manager privileged helper"
-msgstr ""
+msgstr "Spustit pomocný nástroj Správce aktualizací s oprávněními"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
-msgstr ""
+msgstr "Pro instalaci nebo aktualizaci balíčků je vyžadováno ověření."
 
-#~ msgid "Checking for updates..."
-#~ msgstr "Kontrolují se aktualizace..."
