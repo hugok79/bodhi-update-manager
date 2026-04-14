@@ -1,9 +1,9 @@
 """Backend registry and abstract base class for update discovery."""
 
-import importlib
 import inspect
 import logging
 from abc import ABC, abstractmethod
+from importlib.metadata import entry_points, import_module
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -161,7 +161,7 @@ def discover_plugins() -> List[type[UpdateBackend]]:
 
         module_name = f"bodhi_update.plugins.{stem}"
         try:
-            module = importlib.import_module(module_name)
+            module = import_module(module_name)
         except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
             # Missing deps, syntax errors, or module-level init failure.
             _log.debug("Skipping plugin %r: %s", module_name, exc)
