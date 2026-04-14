@@ -183,35 +183,89 @@ def discover_plugins() -> List[type[UpdateBackend]]:
 # ------------------------------------------------------------------ #
 
 
+def discover_entrypoint_plugins() -> List[type[UpdateBackend]]:
+    """Return UpdateBackend classes exposed via package entry points."""
+    discovered: List[type[UpdateBackend]] = []
+    seen: set[type[UpdateBackend]] = set()
+
+    for ep in entry_points(group="bodhi_update.backends"):
+        try:
+            obj = ep.load()
+        except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
+            _log.debug("Skipping entry point %r: %s", ep.name, exc)
+            continue
+
+        if not _is_valid_backend_class(obj, getattr(obj, "__module__", "")):
+            _log.debug("Skipping entry point %r: not a valid backend class", ep.name)
+            continue
+
+        if obj in seen:
+            continue
+
+        seen.add(obj)
+        discovered.append(obj)
+
+    return discovered
+
+
+def _iter_backend_classes() -> List[type[UpdateBackend]]:
+    """Return all discovered backend classes from built-ins and entry points."""
+    discovered: List[type[UpdateBackend]] = []
+    seen: set[type[UpdateBackend]] = set()
+
+    for backend_cls in discover_plugins():
+        if backend_cls in seen:
+            continue
+        seen.add(backend_cls)
+        discovered.append(backend_cls)
+
+    for backend_cls in discover_entrypoint_plugins():
+        if backend_cls in seen:
+            continue
+        seen.add(backend_cls)
+        discovered.append(backend_cls)
+
+    return discovered
+
+
 def initialize_registry() -> None:
     """Discover and register all available backend plugins. Idempotent."""
-    # Each backend is instantiated inside try/except so one broken plugin
-    # can't block the rest.
     reg = get_registry()
     if reg.is_initialized():
         return
 
-    for backend_cls in discover_plugins():
+    for backend_cls in _iter_backend_classes():
         try:
             instance = backend_cls()
-            bid = instance.backend_id
-            if not isinstance(bid, str) or not bid:
-                _log.warning(
-                    "Backend %r returned an invalid backend_id %r; skipping.",
-                    backend_cls.__name__,
-                    bid,
-                )
-                continue
-            reg.register(instance)
-            _log.debug("Registered backend: %r", bid)
         except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
-            # Catches missing backend_id, bad constructor args, or init failures.
             _log.warning(
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,
                 exc,
             )
+            continue
+
+        bid = instance.backend_id
+        if not isinstance(bid, str) or not bid:
+            _log.warning(
+                "Backend %r returned an invalid backend_id %r; skipping.",
+                backend_cls.__name__,
+                bid,
+            )
+            continue
+
+        if reg.get_backend(bid) is not None:
+            _log.warning(
+                "Duplicate backend_id %r from %r; skipping.",
+                bid,
+                backend_cls.__name__,
+            )
+            continue
+
+        reg.register(instance)
+        _log.debug("Registered backend: %r", bid)
 
     if reg.get_backend("apt") is None:
-        _log.warning("APT backend was not registered. "
-                     "Package updates may be unavailable.")
+        _log.warning(
+            "APT backend wasn't registered. Package updates may be unavailable."
+        )
