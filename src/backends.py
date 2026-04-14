@@ -142,36 +142,35 @@ def _is_valid_backend_class(obj: object, module_name: str) -> bool:
 
 
 def discover_plugins() -> List[type[UpdateBackend]]:
-    """Scan the plugins package and return concrete UpdateBackend subclasses."""
-    # Sorted for deterministic loading order across environments.
+    """Scan the built-in plugins package for concrete UpdateBackend classes."""
     plugins_dir = Path(__file__).parent / "plugins"
     if not plugins_dir.exists():
+        _log.debug("Built-in plugins directory %r does not exist", plugins_dir)
         return []
+
     discovered: List[type[UpdateBackend]] = []
-    seen: set[type] = set()
+    seen: set[type[UpdateBackend]] = set()
 
-    # Sort for deterministic loading order.
-    plugin_files = sorted(plugins_dir.glob("*.py"))
-
-    for path in plugin_files:
+    for path in sorted(plugins_dir.glob("*.py")):
         stem = path.stem
         if stem.startswith("_"):
-            # Skip __init__.py and any private helpers.
             continue
 
         module_name = f"bodhi_update.plugins.{stem}"
+
         try:
             module = import_module(module_name)
         except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
-            # Missing deps, syntax errors, or module-level init failure.
-            _log.debug("Skipping plugin %r: %s", module_name, exc)
+            _log.debug("Skipping plugin module %r: %s", module_name, exc)
             continue
 
-        for _name, obj in inspect.getmembers(module, inspect.isclass):
+        for _, obj in inspect.getmembers(module, inspect.isclass):
             if not _is_valid_backend_class(obj, module_name):
                 continue
+
             if obj in seen:
                 continue
+
             seen.add(obj)
             discovered.append(obj)
 
