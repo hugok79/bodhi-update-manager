@@ -6,7 +6,6 @@ from __future__ import annotations
 import gettext
 import logging
 import os
-import random
 import subprocess
 import threading
 from typing import Dict, List
@@ -33,13 +32,19 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 from bodhi_update._version import __version__  # noqa: E402
 from bodhi_update.backends import get_registry, initialize_registry  # noqa: E402
 from bodhi_update.hold_controller import HoldController   # noqa: E402
-from bodhi_update.install_commands import build_hold_argv  # noqa: E402
 from bodhi_update.install_controller import InstallController  # noqa: E402
 from bodhi_update.models import (  # noqa: E402
     CONSTRAINT_BLOCKED, CONSTRAINT_HELD, CONSTRAINT_NORMAL, UpdateItem,
 )
 from bodhi_update.prefs import PreferencesStore  # noqa: E402
 from bodhi_update.refresh_controller import RefreshController  # noqa: E402
+from bodhi_update.status_messages import (  # noqa: E402
+    format_selected_count_status,
+    format_update_count_status,
+    hidden_held_count,
+    ready_status_text,
+    with_restart_suffix,
+)
 from bodhi_update.utils import (  # noqa: E402
     find_privilege_tool, format_size, reboot_required,
 )
@@ -480,7 +485,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.status_label = Gtk.Label()
         self.status_label.set_xalign(0.0)
         self.outer_box.pack_start(self.status_label, False, False, 0)
-        self._set_status(self._ready_status_text())
+        self._set_status(ready_status_text())
 
     # ------------------------------------------------------------------ #
     # Dialogs                                                              #
@@ -760,9 +765,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.set_default_size(width, height)
 
-    def _ready_status_text(self) -> str:
-        return _("Restart required.") if reboot_required() else _("Ready")
-
     # ------------------------------------------------------------------ #
     # State management                                                     #
     # ------------------------------------------------------------------ #
@@ -817,90 +819,63 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.show_details_button.set_sensitive(True)
 
     def _set_status(self, message: str) -> None:
-        if reboot_required() and "Restart required" not in message:
-            message = _("%(message)s  Restart required.") % {
-                "message": message
-            }
-        self.status_label.set_text(message)
+        self.status_label.set_text(with_restart_suffix(message))
 
-    def _update_count_status(  # pylint: disable=too-many-locals,too-many-branches
-            self,
-            count: int,
-            total_bytes: int,
-            *,
-            cached: bool = False) -> None:
+    def _update_count_status(
+        self,
+        count: int,
+        total_bytes: int,
+        *,
+        cached: bool = False,
+    ) -> None:
         if count == 0:
-            self._set_status(
-                _("System is up to date. No pending updates in cached package data.")
-                if cached
-                else _("System is up to date.")
-            )
+            self._set_status(format_update_count_status(0, total_bytes, cached=cached))
             self._notify_tray(0, "low")
             return
 
         has_unknown_size = any(
             row[self.COL_RAW_SIZE] == 0 and row[self.COL_BACKEND] != "apt"
-            for row in self.store)
-        if has_unknown_size:
-            size_str = f"{format_size(total_bytes)}+" if total_bytes > 0 else _("Unknown")
-        else:
-            size_str = format_size(total_bytes)
+            for row in self.store
+        )
 
-        message = ngettext("%(count)d update available · Download: %(size)s",
-                           "%(count)d updates available · Download: %(size)s",
-                           count) % {
-                               "count": count,
-                               "size": size_str
-                           }
-        if cached:
-            message = _(
-                "%(message)s · Cached data — refresh to check for newer updates"
-            ) % {"message": message}
-
-        # Note any optional backends that contributed results.
         extras = []
-        for backend, label in (
-            ("snap", "Snap"),
-            ("flatpak", "Flatpak"),
-        ):
+        for backend, label in (("snap", "Snap"), ("flatpak", "Flatpak")):
             if any(row[self.COL_BACKEND] == backend for row in self.store):
                 extras.append(label)
 
-        if extras:
-            message = _("%(message)s (includes %(extras)s)") % {
-                "message": message,
-                "extras": ", ".join(extras)
-            }
-        # Append a count of hidden held/blocked rows.
+        hidden = 0
         if not self.prefs.get("show_held_packages", False):
-            hidden = sum(1 for row in self.store
-                         if row[self.COL_HELD] in (CONSTRAINT_HELD,
-                                                   CONSTRAINT_BLOCKED))
-            if hidden:
-                hint = ngettext(
-                    "%(n)d held/blocked package hidden",
-                    "%(n)d held/blocked packages hidden",
-                    hidden,
-                ) % {
-                    "n": hidden
-                }
-                message = f"{message} · {hint}"
+            hidden = hidden_held_count(self.store, self.COL_HELD)
+
+        message = format_update_count_status(
+            count,
+            total_bytes,
+            cached=cached,
+            has_unknown_size=has_unknown_size,
+            extras=extras,
+            hidden_held_count=hidden,
+        )
         self._set_status(message)
-        # Badge severity = highest severity across actionable (non-held) rows.
+
         from bodhi_update.tray import _pkg_severity  # noqa: PLC0415
+
         severity = "low"
         actionable_count = 0
         for row in self.store:
             if row[self.COL_HELD] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED):
                 continue
             actionable_count += 1
-            s = _pkg_severity(row[self.COL_RAW_NAME], row[self.COL_CATEGORY],
-                              row[self.COL_BACKEND])
-            if s == "high":
+            value = _pkg_severity(
+                row[self.COL_RAW_NAME],
+                row[self.COL_CATEGORY],
+                row[self.COL_BACKEND],
+            )
+            if value == "high":
                 severity = "high"
                 break
-            if s == "medium":
+            if value == "medium":
                 severity = "medium"
+
         self._notify_tray(actionable_count, severity)
 
     def _refresh_selection_status(self) -> None:
@@ -912,43 +887,30 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
           mixed         →  42.2 KB+  (non-APT backends don't report sizes)
         """
         total_selected = 0
-        known_bytes = 0  # sum of raw sizes from size-reporting rows
-        has_known = False  # any selected row has a real byte count
-        has_unknown = False  # any selected row has no reported size
+        known_bytes = 0
+        has_known = False
+        has_unknown = False
 
         for row in self.store:
             if not row[self.COL_SELECTED]:
                 continue
+
             total_selected += 1
             raw = row[self.COL_RAW_SIZE]
             if raw > 0:
                 has_known = True
                 known_bytes += raw
-            else:
-                # Non-APT size==0 means unknown; APT size==0 is genuinely free.
-                b_id = row[self.COL_BACKEND]
-                if b_id != "apt":
-                    has_unknown = True
+            elif row[self.COL_BACKEND] != "apt":
+                has_unknown = True
 
-        if total_selected == 0:
-            return
-
-        if has_known and has_unknown:
-            dl_part = f"{format_size(known_bytes)}+"
-        elif has_known:
-            dl_part = format_size(known_bytes)
-        else:
-            dl_part = _("Unknown")
-
-        message = ngettext("%(count)d update selected · Download: %(size)s",
-                           "%(count)d updates selected · Download: %(size)s",
-                           total_selected) % {
-                               "count": total_selected,
-                               "size": dl_part
-                           }
-
-        self._set_status(message)
-
+        message = format_selected_count_status(
+            total_selected,
+            known_bytes,
+            has_known=has_known,
+            has_unknown=has_unknown,
+        )
+        if message:
+            self._set_status(message)
     # ------------------------------------------------------------------ #
     # Context menu (right-click hold/unhold)                               #
     # ------------------------------------------------------------------ #
