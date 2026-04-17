@@ -491,6 +491,69 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     # Dialogs                                                              #
     # ------------------------------------------------------------------ #
 
+    def _is_backend_enabled(self, backend_id: str) -> bool:
+        """Return True if a backend is enabled in preferences."""
+        visibility = self.prefs.get("backend_visibility", {})
+        if not isinstance(visibility, dict):
+            return True
+        return visibility.get(backend_id, True)
+
+    def _get_preference_backends(self) -> list:
+        """Return available backends that should appear in Preferences."""
+        result = []
+
+        for backend in get_registry().get_available_backends():
+            meta = getattr(backend, "meta", None)
+            if meta is None:
+                continue
+            if not getattr(meta, "show_in_preferences", False):
+                continue
+            result.append(backend)
+
+        return sorted(result, key=lambda b: b.display_name.lower())
+
+    def _get_visible_filter_groups(self) -> dict[str, tuple[str, int]]:
+        """Return filter groups for available + enabled backends."""
+        groups: dict[str, tuple[str, int]] = {}
+
+        for backend in get_registry().get_available_backends():
+            if not self._is_backend_enabled(backend.backend_id):
+                continue
+
+            group = backend.filter_group
+            label = backend.filter_label
+
+            if not group or not label:
+                continue
+
+            groups.setdefault(group, (label, backend.filter_sort_order))
+
+        return groups
+
+    def _rebuild_category_combo(self) -> None:
+        """Rebuild the category combo from current backend state + prefs."""
+        current_id = self.category_combo.get_active_id() or "all"
+
+        self.category_combo.remove_all()
+
+        # Built-in categories
+        self.category_combo.append("all", _("All"))
+        self.category_combo.append("security", _("Security"))
+        self.category_combo.append("kernel", _("Kernel"))
+        self.category_combo.append("system", _("System"))
+
+        # Dynamic backend groups
+        for group_key, (group_label, _sort_order) in sorted(
+            self._get_visible_filter_groups().items(),
+            key=lambda item: (item[1][1], item[1][0].lower()),
+        ):
+            self.category_combo.append(group_key, group_label)
+
+        # Restore selection if possible
+        self.category_combo.set_active_id(current_id)
+        if self.category_combo.get_active_id() is None:
+            self.category_combo.set_active_id("all")
+
     def _show_preferences_dialog(self) -> None:  # pylint: disable=too-many-statements
         dialog = Gtk.Dialog(
             title=_("Preferences"),
@@ -517,18 +580,14 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         held_check.set_active(self.prefs.get("show_held_packages", False))
         box.pack_start(held_check, False, False, 0)
 
-        snap_check: Gtk.CheckButton | None = None
-        flatpak_check: Gtk.CheckButton | None = None
+        backend_checks: dict[str, Gtk.CheckButton] = {}
 
-        if "snap" in _registered_ids:
-            snap_check = Gtk.CheckButton(label=_("Show Snap updates"))
-            snap_check.set_active(self.prefs.get("show_snap", True))
-            box.pack_start(snap_check, False, False, 0)
-
-        if "flatpak" in _registered_ids:
-            flatpak_check = Gtk.CheckButton(label=_("Show Flatpak updates"))
-            flatpak_check.set_active(self.prefs.get("show_flatpak", True))
-            box.pack_start(flatpak_check, False, False, 0)
+        for backend in self._get_preference_backends():
+            label = _("Show %(name)s updates") % {"name": backend.display_name}
+            check = Gtk.CheckButton(label=label)
+            check.set_active(self._is_backend_enabled(backend.backend_id))
+            box.pack_start(check, False, False, 0)
+            backend_checks[backend.backend_id] = check
 
         dialog.show_all()
         response = dialog.run()
@@ -550,18 +609,16 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 self.prefs["show_held_packages"] = new_held
                 changed = True
 
-            if snap_check is not None:
-                new_val = snap_check.get_active()
-                if self.prefs.get("show_snap", True) != new_val:
-                    self.prefs["show_snap"] = new_val
-                    changed = True
-            if flatpak_check is not None:
-                new_val = flatpak_check.get_active()
-                if self.prefs.get("show_flatpak", True) != new_val:
-                    self.prefs["show_flatpak"] = new_val
+            visibility = self.prefs.setdefault("backend_visibility", {})
+
+            for backend_id, check in backend_checks.items():
+                new_val = check.get_active()
+                if visibility.get(backend_id, True) != new_val:
+                    visibility[backend_id] = new_val
                     changed = True
             if changed:
                 self.pref_store.save(self.prefs)
+                self._rebuild_category_combo()
                 self.filter_model.refilter()
                 # Flash "Preferences saved." briefly, then restore the real count status.
                 self._restore_current_update_status()
@@ -976,9 +1033,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     ) -> bool:
         row_backend = model[iter_][self.COL_BACKEND]
 
-        if row_backend == "snap" and not self.prefs.get("show_snap", True):
-            return False
-        if row_backend == "flatpak" and not self.prefs.get("show_flatpak", True):
+        if not self._is_backend_enabled(row_backend):
             return False
 
         if (

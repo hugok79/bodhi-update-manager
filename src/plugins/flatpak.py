@@ -22,6 +22,7 @@ class FlatpakBackend(UpdateBackend):
         filter_group = "flatpak",
         filter_label = "FlatPak",
         filter_sort_order = 200,
+        show_in_preferences=True,
     )
 
     def is_available(self) -> bool:

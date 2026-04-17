@@ -25,6 +25,7 @@ class BackendMeta:
     filter_group: str | None = None
     filter_label: str | None = None
     filter_sort_order: int = 100
+    show_in_preferences: bool = False
 
 
 class UpdateBackend(ABC):

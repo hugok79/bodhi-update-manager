@@ -15,6 +15,7 @@ DEFAULT_PREFS: dict[str, bool] = {
     "show_held_packages": False,
     "show_snap": True,
     "show_flatpak": True,
+    "backend_visibility": {},
 }
 
 

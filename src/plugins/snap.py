@@ -18,6 +18,7 @@ class SnapBackend(UpdateBackend):
         filter_group = "snap",
         filter_label = "Snap",
         filter_sort_order = 200,
+        show_in_preferences=True,
     )
 
     def is_available(self) -> bool:
