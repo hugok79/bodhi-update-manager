@@ -49,7 +49,7 @@ class SnapBackend(UpdateBackend):
     def check_busy(self) -> Tuple[bool, str]:
         return False, ""
 
-    def refresh(self) -> Tuple[bool, str]:
+    def refresh(self, sentinel_path: str | None = None) -> tuple[bool, str]:
         # Discovery is done live in get_updates(); no separate cache step.
         return True, ""
 

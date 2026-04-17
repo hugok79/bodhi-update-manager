@@ -6,9 +6,6 @@ import os
 import subprocess
 from pathlib import Path
 from typing import List, Tuple
-
-import apt
-
 from bodhi_update.backends import BackendMeta, UpdateBackend
 from bodhi_update.install_commands import build_upgrade_argv, get_helper_path
 from bodhi_update.models import (
@@ -18,6 +15,7 @@ from bodhi_update.models import (
     UpdateItem,
 )
 from bodhi_update.utils import find_privilege_tool
+import apt
 
 # APT/dpkg lock files whose open FileDescriptions indicate a busy package system.
 _LOCK_PATHS = (

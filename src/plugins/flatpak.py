@@ -23,7 +23,7 @@ class FlatpakBackend(UpdateBackend):
         filter_label = "Containers",
         filter_sort_order = 100,
     )
-    
+
     def is_available(self) -> bool:
         """Return True when the flatpak binary exists and can list apps.
 
@@ -48,7 +48,7 @@ class FlatpakBackend(UpdateBackend):
     def check_busy(self) -> Tuple[bool, str]:
         return False, ""
 
-    def refresh(self) -> Tuple[bool, str]:
+    def refresh(self, sentinel_path: str | None = None) -> tuple[bool, str]:
         # Remote checks are done live in get_updates(); no warm-up needed.
         return True, ""
 
