@@ -30,8 +30,8 @@ gi.require_version("Vte", "2.91")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 
 from bodhi_update._version import __version__  # noqa: E402
-from bodhi_update.backends import get_registry, initialize_registry  # noqa: E402
-from bodhi_update.hold_controller import HoldController   # noqa: E402
+from bodhi_update.backend_ui_service import BackendUIService  # noqa: E402
+from bodhi_update.hold_controller import HoldController  # noqa: E402
 from bodhi_update.install_controller import InstallController  # noqa: E402
 from bodhi_update.models import (  # noqa: E402
     CONSTRAINT_BLOCKED, CONSTRAINT_HELD, CONSTRAINT_NORMAL, UpdateItem,
@@ -94,6 +94,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.pref_store = PreferencesStore(APP_NAME)
         self.prefs = self.pref_store.load()
+        self.backend_service = BackendUIService(self.prefs)
 
         # Guard flag used by _set_show_descriptions() to suppress menu re-entry.
         self._syncing_desc = False
@@ -108,7 +109,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     def _build_full_ui(self, deb_path: str | None) -> bool:
         """Build all widgets and wire signals. Deferred via GLib.idle_add; returns False."""
         # Returns False so GLib won't reschedule this one-shot idle callback.
-        initialize_registry()
+        self.backend_service.initialize()
 
         self.store = Gtk.ListStore(
             bool, # selected
@@ -262,18 +263,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         toolbar.pack_start(spacer, True, True, 0)
 
         self.category_combo = Gtk.ComboBoxText()
-        self.category_combo.append("all", _("All"))
-        self.category_combo.append("security", _("Security"))
-        self.category_combo.append("kernel", _("Kernel"))
-        self.category_combo.append("system", _("System"))
-
-        for group_key, (group_label, _sort_order) in sorted(
-            get_registry().get_filter_groups().items(),
-            key=lambda item: (item[1][1], item[1][0].lower()),
-        ):
-            self.category_combo.append(group_key, group_label)
-
-        self.category_combo.set_active_id("all")
+        self._rebuild_category_combo()
         self.category_combo.connect("changed", self.on_category_changed)
         toolbar.pack_start(self.category_combo, False, False, 0)
 
@@ -491,45 +481,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     # Dialogs                                                              #
     # ------------------------------------------------------------------ #
 
-    def _is_backend_enabled(self, backend_id: str) -> bool:
-        """Return True if a backend is enabled in preferences."""
-        visibility = self.prefs.get("backend_visibility", {})
-        if not isinstance(visibility, dict):
-            return True
-        return visibility.get(backend_id, True)
-
-    def _get_preference_backends(self) -> list:
-        """Return available backends that should appear in Preferences."""
-        result = []
-
-        for backend in get_registry().get_available_backends():
-            meta = getattr(backend, "meta", None)
-            if meta is None:
-                continue
-            if not getattr(meta, "show_in_preferences", False):
-                continue
-            result.append(backend)
-
-        return sorted(result, key=lambda b: b.display_name.lower())
-
-    def _get_visible_filter_groups(self) -> dict[str, tuple[str, int]]:
-        """Return filter groups for available + enabled backends."""
-        groups: dict[str, tuple[str, int]] = {}
-
-        for backend in get_registry().get_available_backends():
-            if not self._is_backend_enabled(backend.backend_id):
-                continue
-
-            group = backend.filter_group
-            label = backend.filter_label
-
-            if not group or not label:
-                continue
-
-            groups.setdefault(group, (label, backend.filter_sort_order))
-
-        return groups
-
     def _rebuild_category_combo(self) -> None:
         """Rebuild the category combo from current backend state + prefs."""
         current_id = self.category_combo.get_active_id() or "all"
@@ -544,7 +495,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         # Dynamic backend groups
         for group_key, (group_label, _sort_order) in sorted(
-            self._get_visible_filter_groups().items(),
+            self.backend_service.get_visible_filter_groups().items(),
             key=lambda item: (item[1][1], item[1][0].lower()),
         ):
             self.category_combo.append(group_key, group_label)
@@ -567,11 +518,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         box.set_spacing(8)
         box.set_border_width(8)
 
-        # Optional backend visibility — only show toggles for registered backends.
-        _registered_ids = {
-            b.backend_id for b in get_registry().get_all_backends()
-        }
-
         notif_check = Gtk.CheckButton(label=_("Show notifications"))
         notif_check.set_active(self.prefs.get("show_notifications", True))
         box.pack_start(notif_check, False, False, 0)
@@ -582,10 +528,12 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         backend_checks: dict[str, Gtk.CheckButton] = {}
 
-        for backend in self._get_preference_backends():
+        for backend in self.backend_service.get_preference_backends():
             label = _("Show %(name)s updates") % {"name": backend.display_name}
             check = Gtk.CheckButton(label=label)
-            check.set_active(self._is_backend_enabled(backend.backend_id))
+            check.set_active(
+                self.backend_service.is_backend_enabled(backend.backend_id)
+            )
             box.pack_start(check, False, False, 0)
             backend_checks[backend.backend_id] = check
 
@@ -1033,7 +981,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     ) -> bool:
         row_backend = model[iter_][self.COL_BACKEND]
 
-        if not self._is_backend_enabled(row_backend):
+        if not self.backend_service.is_backend_enabled(row_backend):
             return False
 
         if (
@@ -1131,8 +1079,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                     if update.size == 0 and update.backend != "apt"
                     else format_size(update.size)
                 )
-                backend = get_registry().get_backend(update.backend)
-                filter_group = backend.filter_group if backend is not None else None
+                filter_group = self.backend_service.get_row_filter_group(update.backend)
                 self.store.append([
                     False,
                     pkg_markup,
@@ -1142,7 +1089,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                     update.origin,
                     update.name,
                     update.category,
-                    filter_group or "",
+                    filter_group,
                     update.backend,
                     icon,
                     update.size,
@@ -1162,22 +1109,14 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         return grouped
 
     def _load_cached_updates_on_startup(self) -> None:
-        """Background worker: read cached package data, then hand off to the GTK thread."""
-        updates: List[UpdateItem] = []
-        total_bytes = 0
-        error_msgs = []
-
-        for backend in get_registry().get_all_backends():
-            try:
-                b_updates, b_bytes = backend.get_updates()
-                updates.extend(b_updates)
-                total_bytes += b_bytes
-            except (OSError, RuntimeError, ValueError) as exc:
-                # Capture the specific failure to report in the UI
-                error_msgs.append(f"{backend.display_name}: {exc}")
-
-        GLib.idle_add(self._finish_startup_load, updates, total_bytes,
-                      error_msgs)
+        """Background worker: read cached package data, then hand off to GTK."""
+        result = self.backend_service.load_cached_updates()
+        GLib.idle_add(
+            self._finish_startup_load,
+            result.updates,
+            result.total_bytes,
+            result.error_messages,
+        )
 
     def _finish_startup_load(
         self,
@@ -1194,9 +1133,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             return False
 
         self._populate_store(updates)
-        actionable = sum(
-            1 for u in updates
-            if getattr(u, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
+        actionable = self.backend_service.count_actionable_updates(updates)
         self._update_count_status(actionable, total_bytes, cached=True)
         return False
 
@@ -1329,43 +1266,12 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.refresh_in_progress or self.install_in_progress:
             return
 
-        for backend in get_registry().get_all_backends():
-            is_busy, message = backend.check_busy()
-            if is_busy:
-                self._set_status(message)
-                return
+        message = self.backend_service.check_any_backend_busy()
+        if message:
+            self._set_status(message)
+            return
 
         self.refresh_controller.start_refresh()
-
-    def _build_install_target_command(
-            self, grouped_packages: Dict[str, List[str]] | None) -> list[str]:
-        """Return install argv for the selected packages.
-
-        Raises RuntimeError for multi-backend selections or unknown backend IDs.
-        """
-        if not grouped_packages:
-            registry = get_registry()
-            apt_backend = registry.get_backend("apt")
-            if apt_backend:
-                return apt_backend.build_install_command(None)
-            raise RuntimeError(_("Primary backend (APT) is not configured."))
-
-        if len(grouped_packages) > 1:
-            raise RuntimeError(
-                _("Installing from multiple package sources simultaneously is not yet supported. "
-                  "Please select packages from one source type only.")
-            )
-
-        backend_id = next(iter(grouped_packages.keys()))
-        target_packages = grouped_packages[backend_id]
-
-        registry = get_registry()
-        backend = registry.get_backend(backend_id)
-        if not backend:
-            raise RuntimeError(_("Requested installation for unknown backend: %(backend_id)s") %
-                               {"backend_id": backend_id})
-
-        return backend.build_install_command(target_packages)
 
     def on_install_selected(self,
                             _button: Gtk.Button | Gtk.MenuItem | None) -> None:
@@ -1380,7 +1286,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             return
 
         try:
-            argv = self._build_install_target_command(grouped_packages)
+            argv = self.backend_service.build_install_target_command(grouped_packages)
         except RuntimeError as exc:
             self._set_status(str(exc))
             return
