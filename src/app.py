@@ -32,7 +32,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 
 from bodhi_update._version import __version__  # noqa: E402
 from bodhi_update.backend_ui_service import BackendUIService  # noqa: E402
-from bodhi_update.dialogs import PreferencesDialog  # noqa: E402
+from bodhi_update.dialogs import AboutDialog, PreferencesDialog  # noqa: E402
 from bodhi_update.hold_controller import HoldController  # noqa: E402
 from bodhi_update.install_controller import InstallController  # noqa: E402
 from bodhi_update.models import (  # noqa: E402
@@ -51,26 +51,6 @@ from bodhi_update.utils import (  # noqa: E402
     find_privilege_tool, format_size, reboot_required,
 )
 
-ABOUT_TEXT = _(
-    """Update Manager
-
-A lightweight graphical update manager for Debian based distros."""
-)
-
-GPL_SHORT = _(
-    """This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>."""
-)
 
 COLUMN_SCHEMA = (
     ("SELECTED", bool),
@@ -118,8 +98,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.pref_store = PreferencesStore(APP_NAME)
         self.prefs = self.pref_store.load()
-        print(self.pref_store.get_path())
-        print(self.prefs)
         self.backend_service = BackendUIService(self.prefs)
 
         # Guard flag used by _set_show_descriptions() to suppress menu re-entry.
@@ -575,108 +553,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         dialog.destroy()
 
     def _show_about_dialog(self) -> None:
-        # pylint: disable=too-many-locals
         """Display About Dialog"""
-        dialog = Gtk.Dialog(
-            title=_("About"),
-            transient_for=self,
-            flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-        )
-        dialog.set_border_width(10)
-        dialog.set_default_size(600, 400)
-        dialog.add_button(Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE)
-
-        content = dialog.get_content_area()
-
-        outer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        content.pack_start(outer_box, True, True, 0)
-
-        # Left side
-        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        left_box.set_size_request(160, -1)
-        outer_box.pack_start(left_box, False, False, 0)
-
-        icon = Gtk.Image.new_from_icon_name("bodhi-update-manager",
-                                            Gtk.IconSize.DIALOG)
-        icon.set_pixel_size(200)
-        left_box.pack_start(icon, False, False, 0)
-
-        version_label = Gtk.Label()
-        version_label.set_markup(f"<b>{_('Version:')}</b> {__version__}")
-        version_label.set_justify(Gtk.Justification.CENTER)
-        left_box.pack_start(version_label, False, False, 0)
-
-        spacer = Gtk.Box()
-        spacer.set_size_request(-1, 10)
-        left_box.pack_start(spacer, False, False, 0)
-
-        # Right side
-        right_frame = Gtk.Frame()
-        outer_box.pack_start(right_frame, True, True, 0)
-
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        right_frame.add(scrolled)
-
-        textview = Gtk.TextView()
-        textview.set_editable(False)
-        textview.set_cursor_visible(False)
-        textview.set_monospace(False)
-        textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        textview.set_left_margin(10)
-        textview.set_right_margin(10)
-        textview.set_top_margin(10)
-        textview.set_bottom_margin(10)
-        scrolled.add(textview)
-
-        pages = {
-            "update": ABOUT_TEXT,
-            "website": _(
-                """Website
-
-    https://github.com/flux-abyss/bodhi-update-manager"""
-            ),
-            "credits": _(
-                """Credits
-
-    Lead Developer:
-        Joseph “flux.abyss” Wiley
-
-    Contributors:
-        Robert “ylee” Wiley
-        Diego “diekrz2” K."""
-            ),
-            "license": _(
-                """Copyright © 2026 Joseph “flux.abyss” Wiley
-
-    """
-            ) + GPL_SHORT,
-        }
-
-        buttons = [
-            ("update", _("Update Manager")),
-            ("website", _("Website")),
-            ("credits", _("Credits")),
-            ("license", _("License")),
-        ]
-
-        def set_text(text: str) -> None:
-            buffer_ = textview.get_buffer()
-            buffer_.set_text(text)
-
-        def on_about_button_clicked(_button, key: str) -> None:
-            set_text(pages[key])
-
-        for key, label in buttons:
-            btn = Gtk.Button(label=label)
-            btn.set_hexpand(False)
-            btn.connect("clicked", on_about_button_clicked, key)
-            left_box.pack_start(btn, False, False, 0)
-
-        left_box.pack_start(Gtk.Box(), True, True, 0)
-
-        set_text(pages["update"])
-
+        dialog = AboutDialog(self)
         dialog.show_all()
         dialog.run()
         dialog.destroy()
