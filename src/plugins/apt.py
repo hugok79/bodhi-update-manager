@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import List, Tuple
 from bodhi_update.backends import BackendMeta, UpdateBackend
-from bodhi_update.install_commands import build_upgrade_argv, get_helper_path
+from bodhi_update.install_controller import build_upgrade_argv, get_helper_path
 from bodhi_update.models import (
     CONSTRAINT_BLOCKED,
     CONSTRAINT_HELD,

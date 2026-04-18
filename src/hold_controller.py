@@ -12,7 +12,7 @@ from gettext import gettext as _
 from gi.repository import GLib
 
 from bodhi_update.backends import get_registry
-from bodhi_update.install_commands import build_hold_argv
+from bodhi_update.install_controller import build_hold_argv
 from bodhi_update.models import (
     CONSTRAINT_BLOCKED,
     CONSTRAINT_HELD,

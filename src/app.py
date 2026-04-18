@@ -30,7 +30,6 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Vte", "2.91")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 
-from bodhi_update._version import __version__  # noqa: E402
 from bodhi_update.backend_ui_service import BackendUIService  # noqa: E402
 from bodhi_update.dialogs import AboutDialog, PreferencesDialog  # noqa: E402
 from bodhi_update.hold_controller import HoldController  # noqa: E402
@@ -352,7 +351,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.tree.append_column(
             self._make_text_column(
-                _("Installed"),Col.INSTALLED, expand=False, min_width=150
+                _("Installed"), Col.INSTALLED, expand=False, min_width=150
             )
         )
         self.tree.append_column(
@@ -1056,7 +1055,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             self._set_status(_("No privilege tool found. Please reboot manually."))
             return
 
-        from bodhi_update.install_commands import get_helper_path  # noqa: PLC0415
+        from bodhi_update.install_controller import get_helper_path  # noqa: PLC0415
         try:
             subprocess.Popen(  # pylint: disable=consider-using-with
                 [privilege_tool, get_helper_path(), "reboot"])
