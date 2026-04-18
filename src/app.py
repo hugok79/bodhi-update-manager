@@ -32,6 +32,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 
 from bodhi_update._version import __version__  # noqa: E402
 from bodhi_update.backend_ui_service import BackendUIService  # noqa: E402
+from bodhi_update.dialogs import PreferencesDialog  # noqa: E402
 from bodhi_update.hold_controller import HoldController  # noqa: E402
 from bodhi_update.install_controller import InstallController  # noqa: E402
 from bodhi_update.models import (  # noqa: E402
@@ -117,6 +118,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.pref_store = PreferencesStore(APP_NAME)
         self.prefs = self.pref_store.load()
+        print(self.pref_store.get_path())
+        print(self.prefs)
         self.backend_service = BackendUIService(self.prefs)
 
         # Guard flag used by _set_show_descriptions() to suppress menu re-entry.
@@ -513,70 +516,58 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if self.category_combo.get_active_id() is None:
             self.category_combo.set_active_id("all")
 
-    def _show_preferences_dialog(self) -> None:  # pylint: disable=too-many-statements
-        dialog = Gtk.Dialog(
-            title=_("Preferences"),
-            transient_for=self,
-            flags=Gtk.DialogFlags.MODAL,
-        )
-        dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
-        dialog.add_button(_("Apply"), Gtk.ResponseType.APPLY)
-
-        box = dialog.get_content_area()
-        box.set_spacing(8)
-        box.set_border_width(8)
-
-        notif_check = Gtk.CheckButton(label=_("Show notifications"))
-        notif_check.set_active(self.prefs.get("show_notifications", True))
-        box.pack_start(notif_check, False, False, 0)
-
-        held_check = Gtk.CheckButton(label=_("Show held/blocked packages"))
-        held_check.set_active(self.prefs.get("show_held_packages", False))
-        box.pack_start(held_check, False, False, 0)
-
-        backend_checks: dict[str, Gtk.CheckButton] = {}
-
-        for backend in self.backend_service.get_preference_backends():
-            label = _("Show %(name)s updates") % {"name": backend.display_name}
-            check = Gtk.CheckButton(label=label)
-            check.set_active(
-                self.backend_service.is_backend_enabled(backend.backend_id)
+    def _show_preferences_dialog(self) -> None:
+        backend_states = [
+            (
+                backend.backend_id,
+                _("Show %(name)s updates") % {"name": backend.display_name},
+                self.backend_service.is_backend_enabled(backend.backend_id),
             )
-            box.pack_start(check, False, False, 0)
-            backend_checks[backend.backend_id] = check
+            for backend in self.backend_service.get_preference_backends()
+        ]
 
-        dialog.show_all()
+        dialog = PreferencesDialog(
+            self,
+            title=_("Preferences"),
+            notifications_label=_("Show notifications"),
+            held_label=_("Show held/blocked packages"),
+            cancel_label=_("Cancel"),
+            apply_label=_("Apply"),
+            show_notifications=self.prefs.get("show_notifications", True),
+            show_held_packages=self.prefs.get("show_held_packages", False),
+            backend_states=backend_states,
+        )
+
         response = dialog.run()
 
         if response == Gtk.ResponseType.APPLY:
+            values = dialog.get_values()
             changed = False
 
-            new_notif = notif_check.get_active()
+            new_notif = values["show_notifications"]
             if self.prefs.get("show_notifications", True) != new_notif:
                 self.prefs["show_notifications"] = new_notif
                 changed = True
                 if not new_notif:
-                    _app = self.get_application()
-                    if _app is not None and hasattr(_app, "set_tray_count"):
-                        _app.set_tray_count(0)
+                    app = self.get_application()
+                    if app is not None and hasattr(app, "set_tray_count"):
+                        app.set_tray_count(0)
 
-            new_held = held_check.get_active()
+            new_held = values["show_held_packages"]
             if self.prefs.get("show_held_packages", False) != new_held:
                 self.prefs["show_held_packages"] = new_held
                 changed = True
 
             visibility = self.prefs.setdefault("backend_visibility", {})
-
-            for backend_id, check in backend_checks.items():
-                new_val = check.get_active()
+            for backend_id, new_val in values["backend_visibility"].items():
                 if visibility.get(backend_id, True) != new_val:
                     visibility[backend_id] = new_val
                     changed = True
+
             if changed:
                 self.pref_store.save(self.prefs)
                 self._rebuild_category_combo()
                 self.filter_model.refilter()
-                # Flash "Preferences saved." briefly, then restore the real count status.
                 self._restore_current_update_status()
                 self._set_status(_("Preferences saved."))
                 GLib.timeout_add_seconds(3, self._restore_current_update_status)
