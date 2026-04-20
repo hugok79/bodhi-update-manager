@@ -14,19 +14,30 @@ from typing import Dict, List
 from bodhi_update.models import UpdateItem
 
 _log = logging.getLogger(__name__)
-
+_API = "1"
 
 @dataclass(frozen=True)
 class BackendMeta:
     """Static metadata describing an update backend."""
-
     backend_id: str
     display_name: str
+
+    # Plugin API
+    API: str
+
+    # UI
     filter_group: str | None = None
     filter_label: str | None = None
     filter_sort_order: int = 100
-    show_in_preferences: bool = False
     icon_name: str | None = None
+
+    # Preferences
+    show_in_preferences: bool = False
+
+    # Optional metadata (non-functional)
+    author: str | None = None
+    homepage: str | None = None
+    version: str | None = None
 
 
 class UpdateBackend(ABC):
@@ -46,28 +57,39 @@ class UpdateBackend(ABC):
         meta = getattr(cls, "meta", None)
         if not isinstance(meta, BackendMeta):
             raise TypeError(
-                f"{cls.__name__} must define meta as a BackendMeta instance")
+                f"{cls.__name__} must define meta as a BackendMeta instance"
+            )
 
         if not isinstance(meta.backend_id, str) or not meta.backend_id:
             raise TypeError(
-                f"{cls.__name__} must define a non-empty meta.backend_id")
+                f"{cls.__name__} must define a non-empty meta.backend_id"
+            )
 
         if not isinstance(meta.display_name, str) or not meta.display_name:
             raise TypeError(
-                f"{cls.__name__} must define a non-empty meta.display_name")
+                f"{cls.__name__} must define a non-empty meta.display_name"
+            )
+
+        if not isinstance(meta.API, str) or not meta.API:
+            raise TypeError(
+                f"{cls.__name__} must define a non-empty meta.API"
+            )
 
         if meta.filter_group is None and meta.filter_label is not None:
             raise TypeError(
-                f"{cls.__name__} defines filter_label without filter_group")
+                f"{cls.__name__} defines filter_label without filter_group"
+            )
 
         if meta.filter_group is not None:
             if not isinstance(meta.filter_group, str) or not meta.filter_group:
                 raise TypeError(
-                    f"{cls.__name__} must define a non-empty meta.filter_group")
+                    f"{cls.__name__} must define a non-empty meta.filter_group"
+                )
             if not isinstance(meta.filter_label, str) or not meta.filter_label:
                 raise TypeError(
                     f"{cls.__name__} must define meta.filter_label when "
-                    "meta.filter_group is set")
+                    "meta.filter_group is set"
+                )
 
     @property
     def backend_id(self) -> str:
@@ -345,6 +367,19 @@ def initialize_registry() -> None:
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,
                 exc,
+            )
+            continue
+        #  API compatibility check ---
+        meta = instance.meta
+        assert meta is not None  # guaranteed by __init_subclass__
+
+        if meta.API != _API:
+            _log.warning(
+                "Skipping backend %r: incompatible plugin API %r "
+                "(expected %r)",
+                backend_cls.__name__,
+                meta.API,
+                _API,
             )
             continue
 
