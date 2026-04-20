@@ -37,7 +37,7 @@ class RefreshController:
                 pass
             self._refresh_sentinel_path = None
             self._refresh_poll_source_id = None
-            GLib.idle_add(self.window._set_status, _("Loading updates..."))
+            GLib.idle_add(self.window.set_status, _("Loading updates..."))
             return False
 
         return True
@@ -70,21 +70,21 @@ class RefreshController:
         """GTK-thread callback: update UI after refresh finishes."""
         log.info("Refresh finished. %d updates. Success: %s", len(updates), ok)
 
-        self.window._set_refresh_busy(False)
-        self.window._set_updates_loading(False)
+        self.window.set_refresh_busy(False)
+        self.window.set_updates_loading(False)
 
-        self.window._populate_store(updates)
+        self.window.populate_store(updates)
         actionable = sum(
             1
             for update in updates
             if getattr(update, "constraint", CONSTRAINT_NORMAL)
             == CONSTRAINT_NORMAL
         )
-        self.window._update_count_status(actionable, total_bytes, cached=not ok)
+        self.window.update_count_status(actionable, total_bytes, cached=not ok)
 
         if not ok and message:
-            current_status = self.window.status_label.get_text()
-            self.window._set_status(
+            current_status = self.window.get_status_text()
+            self.window.set_status(
                 _("%(current_status)s — Warning: %(message)s")
                 % {
                     "current_status": current_status,
@@ -118,7 +118,7 @@ class RefreshController:
                 os.unlink(sentinel)
             except OSError:
                 pass
-            GLib.idle_add(self.window._set_status, _("Loading updates..."))
+            GLib.idle_add(self.window.set_status, _("Loading updates..."))
 
         self._refresh_sentinel_path = None
 
@@ -162,12 +162,9 @@ class RefreshController:
 
     def start_refresh(self) -> None:
         """Start the privileged refresh flow."""
-        self.window._set_refresh_busy(True)
-        self.window.updates_stack.set_visible_child_name("loading")
-        self.window._loading_spinner.start()
-        self.window._updates_loading = True
-        self.window._update_action_sensitivity()
-        self.window._set_status(_("Waiting for authorization..."))
+        self.window.set_refresh_busy(True)
+        self.window.set_updates_loading(True)
+        self.window.set_status(_("Waiting for authorization..."))
 
         self._refresh_sentinel_path = (
             f"/tmp/bodup-refresh-{os.getpid()}-"

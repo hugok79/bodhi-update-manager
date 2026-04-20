@@ -141,7 +141,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             self.show_all()
             self.install_details_revealer.set_reveal_child(False)
             self.reboot_info_bar.hide()
-            self._set_updates_loading(True)
+            self.set_updates_loading(True)
             threading.Thread(target=self._load_cached_updates_on_startup,
                              daemon=True).start()
 
@@ -461,7 +461,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.status_label = Gtk.Label()
         self.status_label.set_xalign(0.0)
         self.outer_box.pack_start(self.status_label, False, False, 0)
-        self._set_status(ready_status_text())
+        self.set_status(ready_status_text())
 
     # ------------------------------------------------------------------ #
     # Dialogs                                                              #
@@ -543,9 +543,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 self.pref_store.save(self.prefs)
                 self._rebuild_category_combo()
                 self.filter_model.refilter()
-                self._restore_current_update_status()
-                self._set_status(_("Preferences saved."))
-                GLib.timeout_add_seconds(3, self._restore_current_update_status)
+                self.restore_current_update_status()
+                self.set_status(_("Preferences saved."))
+                GLib.timeout_add_seconds(3, self.restore_current_update_status)
 
         dialog.destroy()
 
@@ -582,7 +582,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 name = row[Col.RAW_NAME]
                 desc = row[Col.DESC]
                 constraint = row[Col.HELD]
-                row[Col.PACKAGE] = self._build_pkg_markup(
+                row[Col.PACKAGE] = self.build_pkg_markup(
                     name, desc, show_desc, constraint)
         finally:
             self.store.thaw_notify()
@@ -669,19 +669,19 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             self.clear_menu_item.set_sensitive(sensitive)
             self.show_desc_menu_item.set_sensitive(sensitive)
 
-    def _set_updates_loading(self, loading: bool) -> None:
+    def set_updates_loading(self, loading: bool) -> None:
         """Switch the updates view between the loading and list pages."""
         self._updates_loading = loading
         if loading:
             self.updates_stack.set_visible_child_name("loading")
             self._loading_spinner.start()
-            self._set_status(_("Loading updates..."))
+            self.set_status(_("Loading updates..."))
         else:
             self._loading_spinner.stop()
             self.updates_stack.set_visible_child_name("list")
         self._update_action_sensitivity()
 
-    def _set_refresh_busy(self, busy: bool) -> None:
+    def set_refresh_busy(self, busy: bool) -> None:
         self.refresh_in_progress = busy
         self._update_action_sensitivity()
 
@@ -691,16 +691,20 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if app is not None and hasattr(app, "set_tray_count"):
             app.set_tray_count(count, severity)
 
-    def _set_install_busy(self, busy: bool) -> None:
+    def set_install_busy(self, busy: bool) -> None:
         self.install_in_progress = busy
         self._update_action_sensitivity()
         self.back_to_updates_button.set_sensitive(not busy)
         self.show_details_button.set_sensitive(True)
 
-    def _set_status(self, message: str) -> None:
+    def set_status(self, message: str) -> None:
         self.status_label.set_text(with_restart_suffix(message))
 
-    def _update_count_status(
+    def get_status_text(self) -> str:
+        """Return the current status bar text."""
+        return self.status_label.get_text()
+
+    def update_count_status(
         self,
         count: int,
         total_bytes: int,
@@ -708,7 +712,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         cached: bool = False,
     ) -> None:
         if count == 0:
-            self._set_status(format_update_count_status(0, total_bytes, cached=cached))
+            self.set_status(format_update_count_status(0, total_bytes, cached=cached))
             self._notify_tray(0, "low")
             return
 
@@ -734,7 +738,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             extras=extras,
             hidden_held_count=hidden,
         )
-        self._set_status(message)
+        self.set_status(message)
 
         from bodhi_update.tray import _pkg_severity  # noqa: PLC0415
 
@@ -789,7 +793,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             has_unknown=has_unknown,
         )
         if message:
-            self._set_status(message)
+            self.set_status(message)
     # ------------------------------------------------------------------ #
     # Context menu (right-click hold/unhold)                               #
     # ------------------------------------------------------------------ #
@@ -835,7 +839,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     # Store / data helpers                                                 #
     # ------------------------------------------------------------------ #
 
-    def _restore_current_update_status(self) -> bool:
+    def restore_current_update_status(self) -> bool:
         """Recompute the normal status line from the current store state."""
         if any(row[Col.SELECTED] for row in self.store):
             return False  # user made a selection; leave their status line alone
@@ -844,7 +848,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                           if row[Col.HELD] == CONSTRAINT_NORMAL)
         actionable = sum(
             1 for row in self.store if row[Col.HELD] == CONSTRAINT_NORMAL)
-        self._update_count_status(actionable, total_bytes, cached=True)
+        self.update_count_status(actionable, total_bytes, cached=True)
         return False  # one-shot: remove the timeout source
 
     def _category_filter_func(
@@ -892,10 +896,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.store.clear()
 
     @staticmethod
-    def _build_pkg_markup(name: str,
-                          description: str,
-                          show_desc: bool,
-                          constraint: str = CONSTRAINT_NORMAL) -> str:
+    def build_pkg_markup(name: str,
+                         description: str,
+                         show_desc: bool,
+                         constraint: str = CONSTRAINT_NORMAL) -> str:
         """Return Pango markup for the Package column."""
         name_esc = GLib.markup_escape_text(name)
         markup = f"<b>{name_esc}</b>"
@@ -919,7 +923,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 markup += f"\n<small>{desc_esc}</small>"
         return markup
 
-    def _populate_store(self, updates: List[UpdateItem]) -> None:
+    def populate_store(self, updates: List[UpdateItem]) -> None:
         self.store.freeze_notify()
         try:
             self.store.clear()
@@ -931,9 +935,9 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                     update.backend,
                     constraint,
                 )
-                pkg_markup = self._build_pkg_markup(update.name,
-                                                    update.description,
-                                                    show_desc, constraint)
+                pkg_markup = self.build_pkg_markup(update.name,
+                                                   update.description,
+                                                   show_desc, constraint)
                 size_str = (
                     _("N/A")
                     if update.size == 0 and update.backend != "apt"
@@ -985,16 +989,16 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         error_msgs: list[str],
     ) -> bool:
         """GTK-thread callback: populate the store after startup load completes."""
-        self._set_updates_loading(False)
+        self.set_updates_loading(False)
 
         if error_msgs and not updates:
             self._clear_store()
-            self._set_status(_("Failed to read cached package information."))
+            self.set_status(_("Failed to read cached package information."))
             return False
 
-        self._populate_store(updates)
+        self.populate_store(updates)
         actionable = self.backend_service.count_actionable_updates(updates)
-        self._update_count_status(actionable, total_bytes, cached=True)
+        self.update_count_status(actionable, total_bytes, cached=True)
         return False
 
     # ------------------------------------------------------------------ #
@@ -1013,34 +1017,34 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 _("Installing %(deb_name)s...") % {"deb_name": deb_name},
             )
         except (RuntimeError, ValueError, FileNotFoundError) as exc:
-            self._set_install_busy(False)
+            self.set_install_busy(False)
             self.install_progress.set_fraction(0.0)
             self.install_progress.set_text(_("Failed"))
             self.install_phase_label.set_text(str(exc))
-            self._set_status(_("Validation failed: %(exc)s") % {"exc": exc})
+            self.set_status(_("Validation failed: %(exc)s") % {"exc": exc})
 
     def _finish_install_success(self) -> None:
         self.install_controller.finish_install_success()
         if reboot_required():
             self.reboot_info_bar.show()
 
+    def _terminal_text(self) -> str:
+        """Return plain text from the VTE terminal, or '' on error.
+
+        Must pass attributes=None to avoid a vte_terminal_get_text assertion
+        failure caused by PyGObject supplying a non-null GArray pointer.
+        """
+        try:
+            result = self.install_terminal.get_text(lambda *a: True, None)
+            text = result[0] if isinstance(result, tuple) else result
+            return text or ""
+        except (AttributeError, TypeError, ValueError):
+            # VTE API is loosely typed and sensitive to GArray pointers;
+            # return empty string if the bridge or assertion fails.
+            return ""
+
     def _finish_install_failure(self, exit_code: int) -> None:
         self.install_controller.finish_install_failure(exit_code)
-
-        def _terminal_text(self) -> str:
-            """Return plain text from the VTE terminal, or '' on error.
-
-            Must pass attributes=None to avoid a vte_terminal_get_text assertion
-            failure caused by PyGObject supplying a non-null GArray pointer.
-            """
-            try:
-                result = self.install_terminal.get_text(lambda *a: True, None)
-                text = result[0] if isinstance(result, tuple) else result
-                return text or ""
-            except (AttributeError, TypeError, ValueError):
-                # VTE API is loosely typed and sensitive to GArray pointers;
-                # return empty string if the bridge or assertion fails.
-                return ""
 
     def _on_reboot_bar_response(self, _bar: Gtk.InfoBar,
                                 response_id: int) -> None:
@@ -1050,7 +1054,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         privilege_tool = find_privilege_tool()
         if privilege_tool is None:
-            self._set_status(_("No privilege tool found. Please reboot manually."))
+            self.set_status(_("No privilege tool found. Please reboot manually."))
             return
 
         from bodhi_update.install_controller import get_helper_path  # noqa: PLC0415
@@ -1058,7 +1062,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             subprocess.Popen(  # pylint: disable=consider-using-with
                 [privilege_tool, get_helper_path(), "reboot"])
         except OSError as exc:
-            self._set_status(_("Failed to initiate reboot: %(exc)s") % {"exc": exc})
+            self.set_status(_("Failed to initiate reboot: %(exc)s") % {"exc": exc})
 
     # ------------------------------------------------------------------ #
     # Signal handlers                                                      #
@@ -1128,7 +1132,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         message = self.backend_service.check_any_backend_busy()
         if message:
-            self._set_status(message)
+            self.set_status(message)
             return
 
         self.refresh_controller.start_refresh()
@@ -1141,14 +1145,14 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         grouped_packages = self._selected_package_names()
         if not any(pkgs for pkgs in grouped_packages.values()):
-            self._set_status(_("No packages selected."))
-            GLib.timeout_add_seconds(3, self._restore_current_update_status)
+            self.set_status(_("No packages selected."))
+            GLib.timeout_add_seconds(3, self.restore_current_update_status)
             return
 
         try:
             argv = self.backend_service.build_install_target_command(grouped_packages)
         except RuntimeError as exc:
-            self._set_status(str(exc))
+            self.set_status(str(exc))
             return
 
         self._launch_install(argv, _("Installing selected updates..."))
@@ -1170,7 +1174,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         self.stack.set_visible_child_name("updates")
         self._update_action_sensitivity()
-        self._set_updates_loading(True)
+        self.set_updates_loading(True)
         # Use the cached (non-privileged) path — on_check_updates would prompt
         # for pkexec auth, which is wrong after a simple back-navigation.
         threading.Thread(target=self._load_cached_updates_on_startup,

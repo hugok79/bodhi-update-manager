@@ -148,7 +148,7 @@ class InstallController:
     def start_install_progress(self, title: str) -> None:
         """Prepare the install UI and enter AUTH_PENDING state."""
         self.install_state = "AUTH_PENDING"
-        self.window._set_install_busy(True)
+        self.window.set_install_busy(True)
         self.install_output_started = False
         self._active_privilege_tool = None
         self._auth_sentinel_path = None
@@ -165,7 +165,7 @@ class InstallController:
         self.window.install_progress.set_fraction(0.0)
         self.window.install_progress.set_show_text(True)
         self.window.install_progress.set_text(_("Waiting for authentication..."))
-        self.window._set_status(_("Waiting for authorization..."))
+        self.window.set_status(_("Waiting for authorization..."))
 
         self.window.install_details_revealer.set_reveal_child(False)
         self.window.show_details_button.set_active(False)
@@ -191,7 +191,7 @@ class InstallController:
             _("This may take a few minutes.")
         )
         self.window.install_progress.set_text(_("Installing updates..."))
-        self.window._set_status(_("Installing updates..."))
+        self.window.set_status(_("Installing updates..."))
 
         self.window.install_details_revealer.set_reveal_child(True)
         self.window.show_details_button.set_active(True)
@@ -209,7 +209,7 @@ class InstallController:
             log.error("Spawn failed: %s", error.message)
             self.install_state = "FAILED"
             self.cancel_auth_sentinel()
-            self.window._set_install_busy(False)
+            self.window.set_install_busy(False)
             self.window.install_progress.set_fraction(0.0)
             self.window.install_progress.set_text(_("Failed"))
             self.window.install_phase_label.set_text(
@@ -218,7 +218,7 @@ class InstallController:
             self.window.install_details_revealer.set_reveal_child(True)
             self.window.show_details_button.set_active(True)
             self.window.show_details_button.set_label(_("Hide Details"))
-            self.window._set_status(_("Failed to start installation."))
+            self.window.set_status(_("Failed to start installation."))
             return
 
         log.info("Install process spawned (pid %s).", pid)
@@ -256,7 +256,7 @@ class InstallController:
 
         self.window.install_phase_label.set_text(msg)
         self.window.install_progress.set_text(_("Waiting for authentication..."))
-        self.window._set_status(_("Waiting for authorization..."))
+        self.window.set_status(_("Waiting for authorization..."))
         self.window.install_terminal.grab_focus()
 
     def poll_auth_sentinel(self) -> bool:
@@ -327,20 +327,20 @@ class InstallController:
         log.info("Installation completed successfully.")
         self.install_state = "COMPLETE"
         self.cancel_auth_sentinel()
-        self.window._set_install_busy(False)
+        self.window.set_install_busy(False)
         self.window.install_progress.set_fraction(1.0)
         self.window.install_progress.set_text(_("Complete"))
         self.window.install_phase_label.set_text(
             _("Updates installed successfully.")
         )
-        self.window._set_status(_("Ready"))
+        self.window.set_status(_("Ready"))
 
     def finish_install_failure(self, exit_code: int) -> None:
         """Update the UI for a failed install."""
         log.error("Installation failed with exit code: %s", exit_code)
         self.install_state = "FAILED"
         self.cancel_auth_sentinel()
-        self.window._set_install_busy(False)
+        self.window.set_install_busy(False)
         self.window.install_progress.set_fraction(0.0)
         self.window.install_progress.set_text(_("Failed"))
         self.window.install_phase_label.set_text(
@@ -350,7 +350,7 @@ class InstallController:
         self.window.install_details_revealer.set_reveal_child(True)
         self.window.show_details_button.set_active(True)
         self.window.show_details_button.set_label(_("Hide Details"))
-        self.window._set_status(
+        self.window.set_status(
             _("Update failed. Exit code: %(exit_code)s")
             % {"exit_code": exit_code}
         )

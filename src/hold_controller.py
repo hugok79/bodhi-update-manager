@@ -44,7 +44,7 @@ class HoldController:
                 pass
             self._hold_sentinel_path = None
             self._hold_poll_source_id = None
-            GLib.idle_add(self.window._set_status, running_msg)
+            GLib.idle_add(self.window.set_status, running_msg)
             return False
 
         return True
@@ -69,9 +69,10 @@ class HoldController:
 
     def reload_apt_rows(self) -> None:  # pylint: disable=too-many-locals
         """Re-query APT rows only, leaving non-APT rows intact."""
+        from bodhi_update.app import Col  # noqa: PLC0415
         non_apt = [
             list(row) for row in self.window.store
-            if row[self.window.COL_BACKEND] != "apt"
+            if row[Col.BACKEND] != "apt"
         ]
 
         apt_updates = []
@@ -98,18 +99,21 @@ class HoldController:
 
             for update in apt_updates:
                 constraint = update.constraint
-                icon = self.window._category_icon(
+                icon = self.window.backend_service.get_row_icon(
                     update.category,
                     update.backend,
                     constraint,
                 )
-                pkg_markup = self.window._build_pkg_markup(
+                pkg_markup = self.window.build_pkg_markup(
                     update.name,
                     update.description,
                     show_desc,
                     constraint,
                 )
                 size_str = format_size(update.size)
+                filter_group = self.window.backend_service.get_row_filter_group(
+                    update.backend
+                )
                 self.window.store.append([
                     False,
                     pkg_markup,
@@ -119,6 +123,7 @@ class HoldController:
                     update.origin,
                     update.name,
                     update.category,
+                    filter_group,
                     update.backend,
                     icon,
                     update.size,
@@ -129,16 +134,16 @@ class HoldController:
             self.window.store.thaw_notify()
 
         non_apt_bytes = sum(
-            row[self.window.COL_RAW_SIZE]
+            row[Col.RAW_SIZE]
             for row in self.window.store
-            if row[self.window.COL_BACKEND] != "apt"
+            if row[Col.BACKEND] != "apt"
         )
         actionable = sum(
             1
             for row in self.window.store
-            if row[self.window.COL_HELD] == CONSTRAINT_NORMAL
+            if row[Col.HELD] == CONSTRAINT_NORMAL
         )
-        self.window._update_count_status(
+        self.window.update_count_status(
             actionable,
             apt_bytes + non_apt_bytes,
             cached=True,
@@ -162,7 +167,7 @@ class HoldController:
             running_msg,
         )
 
-        self.window._set_status(_("Waiting for authorization..."))
+        self.window.set_status(_("Waiting for authorization..."))
 
         def _worker() -> None:
             try:
@@ -173,7 +178,7 @@ class HoldController:
                 )
             except RuntimeError as exc:
                 self.cancel_hold_sentinel()
-                GLib.idle_add(self.window._set_status, str(exc))
+                GLib.idle_add(self.window.set_status, str(exc))
                 return
 
             result = subprocess.run(
@@ -189,7 +194,7 @@ class HoldController:
                 except OSError:
                     pass
                 self._hold_sentinel_path = None
-                GLib.idle_add(self.window._set_status, running_msg)
+                GLib.idle_add(self.window.set_status, running_msg)
 
             self.cancel_hold_sentinel()
 
@@ -203,7 +208,7 @@ class HoldController:
                 msg = err_lines[0] if err_lines else _(
                     "apt-mark failed (unknown error)"
                 )
-                GLib.idle_add(self.window._set_status, msg)
+                GLib.idle_add(self.window.set_status, msg)
                 return
 
             if hold:
@@ -214,10 +219,10 @@ class HoldController:
                 ) % {"name": pkg_name}
 
             GLib.idle_add(self.reload_apt_rows)
-            GLib.idle_add(self.window._set_status, status)
+            GLib.idle_add(self.window.set_status, status)
             GLib.timeout_add_seconds(
                 3,
-                self.window._restore_current_update_status,
+                self.window.restore_current_update_status,
             )
 
         threading.Thread(target=_worker, daemon=True).start()
