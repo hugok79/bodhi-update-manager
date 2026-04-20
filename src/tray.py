@@ -329,7 +329,9 @@ class TrayIcon:
                 try:
                     updates, _ = backend.get_updates()
                     for u in updates:
-                        if getattr(u, "constraint", None) in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED):
+                        if getattr(u, "constraint",
+                                   None) in (CONSTRAINT_HELD,
+                                             CONSTRAINT_BLOCKED):
                             continue
                         count += 1
                         s = _pkg_severity(

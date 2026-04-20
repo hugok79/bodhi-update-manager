@@ -112,12 +112,8 @@ class BackendUIService:
 
     def count_actionable_updates(self, updates: list[UpdateItem]) -> int:
         """Return the number of actionable updates."""
-        return sum(
-            1
-            for update in updates
-            if getattr(update, "constraint", CONSTRAINT_NORMAL)
-            == CONSTRAINT_NORMAL
-        )
+        return sum(1 for update in updates if getattr(
+            update, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
 
     def check_any_backend_busy(self) -> str | None:
         """Return a busy message if any backend is busy, else None."""
@@ -145,8 +141,7 @@ class BackendUIService:
             raise RuntimeError(
                 "Installing from multiple package sources simultaneously is "
                 "not yet supported. Please select packages from one source "
-                "type only."
-            )
+                "type only.")
 
         backend_id = next(iter(grouped_packages.keys()))
         target_packages = grouped_packages[backend_id]
@@ -154,11 +149,9 @@ class BackendUIService:
         backend = self.get_backend(backend_id)
         if not backend:
             raise RuntimeError(
-                f"Requested installation for unknown backend: {backend_id}"
-            )
+                f"Requested installation for unknown backend: {backend_id}")
 
         return backend.build_install_command(target_packages)
-
 
     def get_row_icon(
         self,
@@ -192,7 +185,8 @@ class BackendUIService:
         # --- Backend-provided icon ---
         backend = self.get_backend(backend_id)
         if backend is not None:
-            icon_name = getattr(getattr(backend, "meta", None), "icon_name", None)
+            icon_name = getattr(getattr(backend, "meta", None), "icon_name",
+                                None)
             if icon_name:
                 return icon_name
 

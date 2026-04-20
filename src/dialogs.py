@@ -1,17 +1,18 @@
 """ Dialogs used by the class UpdateManagerApplication. """
 
+# flake8: noqa: E402
 from __future__ import annotations
 
+from dataclasses import dataclass
 from gettext import gettext as _
 from typing import Dict, List, Tuple
-from bodhi_update._version import __version__  # noqa: E402
 
-import gi  # noqa: E402
+import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import Gtk
 
-
+from bodhi_update._version import __version__
 ABOUT_TEXT = _(
     """Update Manager
 
@@ -91,9 +92,8 @@ Contributors:
         left_box.set_size_request(160, -1)
         outer_box.pack_start(left_box, False, False, 0)
 
-        icon = Gtk.Image.new_from_icon_name(
-            "bodhi-update-manager", Gtk.IconSize.DIALOG
-        )
+        icon = Gtk.Image.new_from_icon_name("bodhi-update-manager",
+                                            Gtk.IconSize.DIALOG)
         icon.set_pixel_size(200)
         left_box.pack_start(icon, False, False, 0)
 
@@ -140,35 +140,46 @@ Contributors:
         self._set_text(self.PAGES[key])
 
 
+@dataclass
+class PreferencesLabels:
+    """All translatable label strings for PreferencesDialog."""
+
+    title: str
+    notifications_label: str
+    held_label: str
+    cancel_label: str
+    apply_label: str
+
+
+@dataclass
+class PreferencesState:
+    """Current pref values used to initialise PreferencesDialog widgets."""
+
+    show_notifications: bool
+    show_held_packages: bool
+    backend_states: List[Tuple[str, str, bool]]
+
+
 class PreferencesDialog(Gtk.Dialog):
     """Preferences dialog for Bodhi Update Manager."""
 
     def __init__(
         self,
         parent: Gtk.Window,
-        *,
-        title: str,
-        notifications_label: str,
-        held_label: str,
-        cancel_label: str,
-        apply_label: str,
-        show_notifications: bool,
-        show_held_packages: bool,
-        backend_states: List[Tuple[str, str, bool]],
+        labels: PreferencesLabels,
+        state: PreferencesState,
     ) -> None:
         """
-        backend_states:
-            List of tuples:
-            (backend_id, display_label, is_enabled)
+        state.backend_states: list of (backend_id, display_label, is_enabled) tuples.
         """
         super().__init__(
-            title=title,
+            title=labels.title,
             transient_for=parent,
             flags=Gtk.DialogFlags.MODAL,
         )
 
-        self.add_button(cancel_label, Gtk.ResponseType.CANCEL)
-        self.add_button(apply_label, Gtk.ResponseType.APPLY)
+        self.add_button(labels.cancel_label, Gtk.ResponseType.CANCEL)
+        self.add_button(labels.apply_label, Gtk.ResponseType.APPLY)
 
         self._backend_checks: Dict[str, Gtk.CheckButton] = {}
 
@@ -178,17 +189,17 @@ class PreferencesDialog(Gtk.Dialog):
 
         # --- General options ---
 
-        self.notif_check = Gtk.CheckButton(label=notifications_label)
-        self.notif_check.set_active(show_notifications)
+        self.notif_check = Gtk.CheckButton(label=labels.notifications_label)
+        self.notif_check.set_active(state.show_notifications)
         content.pack_start(self.notif_check, False, False, 0)
 
-        self.held_check = Gtk.CheckButton(label=held_label)
-        self.held_check.set_active(show_held_packages)
+        self.held_check = Gtk.CheckButton(label=labels.held_label)
+        self.held_check.set_active(state.show_held_packages)
         content.pack_start(self.held_check, False, False, 0)
 
         # --- Backend section (only if any backends exist) ---
 
-        if backend_states:
+        if state.backend_states:
             sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
             content.pack_start(sep, False, False, 6)
 
@@ -197,7 +208,7 @@ class PreferencesDialog(Gtk.Dialog):
             backend_label.get_style_context().add_class("heading")
             content.pack_start(backend_label, False, False, 0)
 
-            for backend_id, label, enabled in backend_states:
+            for backend_id, label, enabled in state.backend_states:
                 check = Gtk.CheckButton(label=label)
                 check.set_active(enabled)
                 content.pack_start(check, False, False, 0)

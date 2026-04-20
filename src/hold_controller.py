@@ -13,11 +13,7 @@ from gi.repository import GLib
 
 from bodhi_update.backends import get_registry
 from bodhi_update.install_controller import build_hold_argv
-from bodhi_update.models import (
-    CONSTRAINT_BLOCKED,
-    CONSTRAINT_HELD,
-    CONSTRAINT_NORMAL,
-)
+from bodhi_update.models import CONSTRAINT_NORMAL
 from bodhi_update.utils import format_size
 
 log = logging.getLogger(__name__)
@@ -71,8 +67,7 @@ class HoldController:
         """Re-query APT rows only, leaving non-APT rows intact."""
         from bodhi_update.app import Col  # noqa: PLC0415
         non_apt = [
-            list(row) for row in self.window.store
-            if row[Col.BACKEND] != "apt"
+            list(row) for row in self.window.store if row[Col.BACKEND] != "apt"
         ]
 
         apt_updates = []
@@ -112,8 +107,7 @@ class HoldController:
                 )
                 size_str = format_size(update.size)
                 filter_group = self.window.backend_service.get_row_filter_group(
-                    update.backend
-                )
+                    update.backend)
                 self.window.store.append([
                     False,
                     pkg_markup,
@@ -133,16 +127,11 @@ class HoldController:
         finally:
             self.window.store.thaw_notify()
 
-        non_apt_bytes = sum(
-            row[Col.RAW_SIZE]
-            for row in self.window.store
-            if row[Col.BACKEND] != "apt"
-        )
-        actionable = sum(
-            1
-            for row in self.window.store
-            if row[Col.HELD] == CONSTRAINT_NORMAL
-        )
+        non_apt_bytes = sum(row[Col.RAW_SIZE]
+                            for row in self.window.store
+                            if row[Col.BACKEND] != "apt")
+        actionable = sum(1 for row in self.window.store
+                         if row[Col.HELD] == CONSTRAINT_NORMAL)
         self.window.update_count_status(
             actionable,
             apt_bytes + non_apt_bytes,
@@ -156,10 +145,8 @@ class HoldController:
 
         running_msg = _("Locking package...") if hold else _("Unlocking package...")
 
-        sentinel = (
-            f"/tmp/bodup-hold-{os.getpid()}-"
-            f"{random.randint(0, 0xFFFFFF):06x}.ok"
-        )
+        sentinel = (f"/tmp/bodup-hold-{os.getpid()}-"
+                    f"{random.randint(0, 0xFFFFFF):06x}.ok")
         self._hold_sentinel_path = sentinel
         self._hold_poll_source_id = GLib.timeout_add(
             100,
@@ -199,12 +186,8 @@ class HoldController:
             self.cancel_hold_sentinel()
 
             if result.returncode != 0:
-                err_lines = (
-                    (result.stderr or b"")
-                    .decode(errors="replace")
-                    .strip()
-                    .splitlines()
-                )
+                err_lines = ((result.stderr or b"").decode(
+                    errors="replace").strip().splitlines())
                 msg = err_lines[0] if err_lines else _(
                     "apt-mark failed (unknown error)"
                 )

@@ -74,12 +74,8 @@ class RefreshController:
         self.window.set_updates_loading(False)
 
         self.window.populate_store(updates)
-        actionable = sum(
-            1
-            for update in updates
-            if getattr(update, "constraint", CONSTRAINT_NORMAL)
-            == CONSTRAINT_NORMAL
-        )
+        actionable = sum(1 for update in updates if getattr(
+            update, "constraint", CONSTRAINT_NORMAL) == CONSTRAINT_NORMAL)
         self.window.update_count_status(actionable, total_bytes, cached=not ok)
 
         if not ok and message:
@@ -166,10 +162,8 @@ class RefreshController:
         self.window.set_updates_loading(True)
         self.window.set_status(_("Waiting for authorization..."))
 
-        self._refresh_sentinel_path = (
-            f"/tmp/bodup-refresh-{os.getpid()}-"
-            f"{random.randint(0, 0xFFFFFF):06x}.ok"
-        )
+        self._refresh_sentinel_path = (f"/tmp/bodup-refresh-{os.getpid()}-"
+                                       f"{random.randint(0, 0xFFFFFF):06x}.ok")
         self._refresh_poll_source_id = GLib.timeout_add(
             100,
             self.poll_refresh_sentinel,

@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from gettext import gettext as _, ngettext as N_
 from typing import Iterable
 
 from bodhi_update.models import CONSTRAINT_BLOCKED, CONSTRAINT_HELD
 from bodhi_update.utils import format_size, reboot_required
+
+
+@dataclass
+class CountStatusOptions:
+    """Display-decoration options for format_update_count_status."""
+
+    cached: bool = False
+    has_unknown_size: bool = False
+    extras: list[str] = field(default_factory=list)
+    hidden_held: int = 0
 
 
 def ready_status_text() -> str:
@@ -24,21 +35,20 @@ def with_restart_suffix(message: str) -> str:
 def format_update_count_status(
     count: int,
     total_bytes: int,
-    *,
-    cached: bool = False,
-    has_unknown_size: bool = False,
-    extras: list[str] | None = None,
-    hidden_held_count: int = 0,
+    opts: CountStatusOptions | None = None,
 ) -> str:
     """Return the main update count status message."""
+    if opts is None:
+        opts = CountStatusOptions()
+
     if count == 0:
         return (
             _("System is up to date. No pending updates in cached package data.")
-            if cached
+            if opts.cached
             else _("System is up to date.")
         )
 
-    if has_unknown_size:
+    if opts.has_unknown_size:
         size_str = f"{format_size(total_bytes)}+" if total_bytes > 0 else _("Unknown")
     else:
         size_str = format_size(total_bytes)
@@ -52,23 +62,23 @@ def format_update_count_status(
         "size": size_str,
     }
 
-    if cached:
+    if opts.cached:
         message = _(
             "%(message)s · Cached data — refresh to check for newer updates"
         ) % {"message": message}
 
-    if extras:
+    if opts.extras:
         message = _("%(message)s (includes %(extras)s)") % {
             "message": message,
-            "extras": ", ".join(extras),
+            "extras": ", ".join(opts.extras),
         }
 
-    if hidden_held_count:
+    if opts.hidden_held:
         hint = N_(
             "%(n)d held/blocked package hidden",
             "%(n)d held/blocked packages hidden",
-            hidden_held_count,
-        ) % {"n": hidden_held_count}
+            opts.hidden_held,
+        ) % {"n": opts.hidden_held}
         message = f"{message} · {hint}"
 
     return message
@@ -104,8 +114,5 @@ def format_selected_count_status(
 
 def hidden_held_count(rows: Iterable, col_held: int) -> int:
     """Return number of held/blocked rows."""
-    return sum(
-        1
-        for row in rows
-        if row[col_held] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED)
-    )
+    return sum(1 for row in rows
+               if row[col_held] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED))

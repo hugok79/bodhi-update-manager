@@ -3,22 +3,13 @@
 # pylint: disable=too-many-lines  # UpdateManagerWindow is one cohesive GTK class
 from __future__ import annotations
 
-from gettext import bindtextdomain, textdomain, gettext as _
 from enum import IntEnum
+from gettext import bindtextdomain, gettext as _, textdomain
 import logging
 import os
 import subprocess
 import threading
 from typing import Dict, List
-
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-log = logging.getLogger("bodhi-update-manager")
-logger = logging.getLogger(__name__)
-
-APP_NAME = "bodhi-update-manager"
-
-bindtextdomain(APP_NAME, "/usr/share/locale")
-textdomain(APP_NAME)
 
 # gi.require_version() must be called before any gi.repository imports.
 import gi  # noqa: E402
@@ -29,7 +20,9 @@ gi.require_version("Vte", "2.91")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 
 from bodhi_update.backend_ui_service import BackendUIService  # noqa: E402
-from bodhi_update.dialogs import AboutDialog, PreferencesDialog  # noqa: E402
+from bodhi_update.dialogs import (  # noqa: E402
+    AboutDialog, PreferencesDialog, PreferencesLabels, PreferencesState,
+)
 from bodhi_update.hold_controller import HoldController  # noqa: E402
 from bodhi_update.install_controller import InstallController  # noqa: E402
 from bodhi_update.models import (  # noqa: E402
@@ -38,17 +31,22 @@ from bodhi_update.models import (  # noqa: E402
 from bodhi_update.prefs import PreferencesStore  # noqa: E402
 from bodhi_update.refresh_controller import RefreshController  # noqa: E402
 from bodhi_update.status_messages import (  # noqa: E402
-    format_selected_count_status,
-    format_update_count_status,
-    hidden_held_count,
-    ready_status_text,
+    CountStatusOptions, format_selected_count_status,
+    format_update_count_status, hidden_held_count, ready_status_text,
     with_restart_suffix,
 )
 from bodhi_update.utils import (  # noqa: E402
     find_privilege_tool, format_size, reboot_required,
 )
 
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+log = logging.getLogger("bodhi-update-manager")
+logger = logging.getLogger(__name__)
 
+APP_NAME = "bodhi-update-manager"
+
+bindtextdomain(APP_NAME, "/usr/share/locale")
+textdomain(APP_NAME)
 COLUMN_SCHEMA = (
     ("SELECTED", bool),
     ("PACKAGE", str),
@@ -68,7 +66,9 @@ COLUMN_SCHEMA = (
 
 Col = IntEnum(
     "Col",
-    {name: index for index, (name, _col_type) in enumerate(COLUMN_SCHEMA)},
+    {
+        name: index for index, (name, _col_type) in enumerate(COLUMN_SCHEMA)
+    },
 )
 
 COLUMN_TYPES = tuple(col_type for _name, col_type in COLUMN_SCHEMA)
@@ -481,8 +481,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         # Dynamic backend groups
         for group_key, (group_label, _sort_order) in sorted(
-            self.backend_service.get_visible_filter_groups().items(),
-            key=lambda item: (item[1][1], item[1][0].lower()),
+                self.backend_service.get_visible_filter_groups().items(),
+                key=lambda item: (item[1][1], item[1][0].lower()),
         ):
             self.category_combo.append(group_key, group_label)
 
@@ -503,14 +503,18 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
         dialog = PreferencesDialog(
             self,
-            title=_("Preferences"),
-            notifications_label=_("Show notifications"),
-            held_label=_("Show held/blocked packages"),
-            cancel_label=_("Cancel"),
-            apply_label=_("Apply"),
-            show_notifications=self.prefs.get("show_notifications", True),
-            show_held_packages=self.prefs.get("show_held_packages", False),
-            backend_states=backend_states,
+            PreferencesLabels(
+                title=_("Preferences"),
+                notifications_label=_("Show notifications"),
+                held_label=_("Show held/blocked packages"),
+                cancel_label=_("Cancel"),
+                apply_label=_("Apply"),
+            ),
+            PreferencesState(
+                show_notifications=self.prefs.get("show_notifications", True),
+                show_held_packages=self.prefs.get("show_held_packages", False),
+                backend_states=backend_states,
+            ),
         )
 
         response = dialog.run()
@@ -682,6 +686,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._update_action_sensitivity()
 
     def set_refresh_busy(self, busy: bool) -> None:
+        """Set the refresh-in-progress flag and update toolbar sensitivity."""
         self.refresh_in_progress = busy
         self._update_action_sensitivity()
 
@@ -692,12 +697,14 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             app.set_tray_count(count, severity)
 
     def set_install_busy(self, busy: bool) -> None:
+        """Set the install-in-progress flag and update toolbar and button sensitivity."""
         self.install_in_progress = busy
         self._update_action_sensitivity()
         self.back_to_updates_button.set_sensitive(not busy)
         self.show_details_button.set_sensitive(True)
 
     def set_status(self, message: str) -> None:
+        """Set the status bar text, appending a restart-required suffix when needed."""
         self.status_label.set_text(with_restart_suffix(message))
 
     def get_status_text(self) -> str:
@@ -711,15 +718,17 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         *,
         cached: bool = False,
     ) -> None:
+        """Update the status bar with the current update count and total download size."""
         if count == 0:
-            self.set_status(format_update_count_status(0, total_bytes, cached=cached))
+            self.set_status(
+                format_update_count_status(0, total_bytes,
+                                           CountStatusOptions(cached=cached)))
             self._notify_tray(0, "low")
             return
 
         has_unknown_size = any(
             row[Col.RAW_SIZE] == 0 and row[Col.BACKEND] != "apt"
-            for row in self.store
-        )
+            for row in self.store)
 
         extras = []
         for backend, label in (("snap", "Snap"), ("flatpak", "Flatpak")):
@@ -730,15 +739,13 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if not self.prefs.get("show_held_packages", False):
             hidden = hidden_held_count(self.store, Col.HELD)
 
-        message = format_update_count_status(
-            count,
-            total_bytes,
+        opts = CountStatusOptions(
             cached=cached,
             has_unknown_size=has_unknown_size,
             extras=extras,
-            hidden_held_count=hidden,
+            hidden_held=hidden,
         )
-        self.set_status(message)
+        self.set_status(format_update_count_status(count, total_bytes, opts))
 
         from bodhi_update.tray import _pkg_severity  # noqa: PLC0415
 
@@ -794,6 +801,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         )
         if message:
             self.set_status(message)
+
     # ------------------------------------------------------------------ #
     # Context menu (right-click hold/unhold)                               #
     # ------------------------------------------------------------------ #
@@ -829,7 +837,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         item.set_always_show_image(True)
         item.connect(
             "activate",
-            lambda _: self.hold_controller.do_hold_toggle(pkg_name, not is_held),
+            lambda _: self.hold_controller.do_hold_toggle(
+                pkg_name, not is_held),
         )
         menu.append(item)
         menu.show_all()
@@ -862,10 +871,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         if not self.backend_service.is_backend_enabled(row_backend):
             return False
 
-        if (
-            model[iter_][Col.HELD] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED)
-            and not self.prefs.get("show_held_packages", False)
-        ):
+        if (model[iter_][Col.HELD] in (CONSTRAINT_HELD, CONSTRAINT_BLOCKED) and
+                not self.prefs.get("show_held_packages", False)):
             return False
 
         selected_id = self.category_combo.get_active_id()
@@ -924,6 +931,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         return markup
 
     def populate_store(self, updates: List[UpdateItem]) -> None:
+        """Clear the ListStore and populate it with *updates*, applying markup and icons."""
         self.store.freeze_notify()
         try:
             self.store.clear()
@@ -943,22 +951,23 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                     if update.size == 0 and update.backend != "apt"
                     else format_size(update.size)
                 )
-                filter_group = self.backend_service.get_row_filter_group(update.backend)
+                filter_group = self.backend_service.get_row_filter_group(
+                    update.backend)
                 self.store.append([
-                    False,                       # Col.SELECTED
-                    pkg_markup,                  # Col.PACKAGE
-                    update.installed_version,    # Col.INSTALLED
-                    update.candidate_version,    # Col.NEW
-                    size_str,                    # Col.SIZE
-                    update.origin,               # Col.REPO
-                    update.name,                 # Col.RAW_NAME
-                    update.category,             # Col.CATEGORY
-                    filter_group,                # Col.FILTER_GROUP
-                    update.backend,              # Col.BACKEND
-                    icon,                        # Col.ICON
-                    update.size,                 # Col.RAW_SIZE
+                    False,  # Col.SELECTED
+                    pkg_markup,  # Col.PACKAGE
+                    update.installed_version,  # Col.INSTALLED
+                    update.candidate_version,  # Col.NEW
+                    size_str,  # Col.SIZE
+                    update.origin,  # Col.REPO
+                    update.name,  # Col.RAW_NAME
+                    update.category,  # Col.CATEGORY
+                    filter_group,  # Col.FILTER_GROUP
+                    update.backend,  # Col.BACKEND
+                    icon,  # Col.ICON
+                    update.size,  # Col.RAW_SIZE
                     update.description or _("System package"),  # Col.DESC
-                    constraint,                  # Col.HELD
+                    constraint,  # Col.HELD
                 ])
         finally:
             self.store.thaw_notify()
@@ -1082,7 +1091,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         child_iter = self.filter_model.convert_iter_to_child_iter(filter_iter)
 
         if self.store[child_iter][Col.HELD] in (CONSTRAINT_HELD,
-                                                     CONSTRAINT_BLOCKED):
+                                                CONSTRAINT_BLOCKED):
             return
 
         current = self.store[child_iter][Col.SELECTED]
@@ -1150,7 +1159,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             return
 
         try:
-            argv = self.backend_service.build_install_target_command(grouped_packages)
+            argv = self.backend_service.build_install_target_command(
+                grouped_packages)
         except RuntimeError as exc:
             self.set_status(str(exc))
             return
@@ -1180,7 +1190,8 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         threading.Thread(target=self._load_cached_updates_on_startup,
                          daemon=True).start()
 
-    def on_install_child_exited(self, _terminal: Vte.Terminal, status: int) -> None:
+    def on_install_child_exited(self, _terminal: Vte.Terminal,
+                                status: int) -> None:
         """VTE child-exited signal: route to success or failure finish handler."""
 
         if status == 0:

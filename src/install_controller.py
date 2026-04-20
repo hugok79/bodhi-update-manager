@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 # Production path registered in the polkit policy file.
 _INSTALLED_HELPER = "/usr/libexec/bodhi-update-manager-root"
 
-
 # Development fallback: the source-tree helper at data/libexec/bodhi-update-manager-root,
 # reached by walking two levels up from src/ to the repo root.
 _DEV_HELPER = os.path.join(
@@ -47,6 +46,7 @@ def get_helper_path() -> str:
     if os.path.isfile(_INSTALLED_HELPER):
         return _INSTALLED_HELPER
     return _DEV_HELPER
+
 
 # ---------------------------------------------------------------------------
 # APT argv builders  (no shell — direct exec)
@@ -159,8 +159,7 @@ class InstallController:
 
         self.window.stack.set_visible_child_name("install")
         self.window.install_title_label.set_markup(
-            f"<b>{GLib.markup_escape_text(title)}</b>"
-        )
+            f"<b>{GLib.markup_escape_text(title)}</b>")
         self.window.install_phase_label.set_text(_("Waiting for authentication..."))
         self.window.install_progress.set_fraction(0.0)
         self.window.install_progress.set_show_text(True)
@@ -200,8 +199,7 @@ class InstallController:
 
         if self.install_pulse_source_id is None:
             self.install_pulse_source_id = GLib.timeout_add(
-                150, self._pulse_install_progress
-            )
+                150, self._pulse_install_progress)
 
     def on_spawn_complete(self, _terminal, pid, error, _user_data=None) -> None:
         """VTE spawn_async callback for hard spawn failures."""
@@ -302,16 +300,13 @@ class InstallController:
         self._active_privilege_tool = find_privilege_tool()
 
         if self._active_privilege_tool == "pkexec":
-            sentinel = (
-                f"/tmp/bodup-auth-{os.getpid()}-"
-                f"{random.randint(0, 0xFFFFFF):06x}.ok"
-            )
+            sentinel = (f"/tmp/bodup-auth-{os.getpid()}-"
+                        f"{random.randint(0, 0xFFFFFF):06x}.ok")
             self._auth_sentinel_path = sentinel
             guarded_argv = [argv[0], argv[1], "--sentinel", sentinel, *argv[2:]]
             self.spawn_install_command(guarded_argv)
             self._auth_poll_source_id = GLib.timeout_add(
-                100, self.poll_auth_sentinel
-            )
+                100, self.poll_auth_sentinel)
         else:
             self.spawn_install_command(argv)
             self.handle_terminal_auth_fallback()
