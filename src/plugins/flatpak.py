@@ -16,13 +16,16 @@ _LS_COLS = "application,branch,origin"
 class FlatpakBackend(UpdateBackend):
     """Update backend that queries installed Flatpak applications."""
 
-    meta = BackendMeta(backend_id="flatpak",
-                       display_name="Flatpak Packages",
-                       filter_group="flatpak",
-                       filter_label="FlatPak",
-                       filter_sort_order=200,
-                       show_in_preferences=True,
-                       icon_name="package-x-generic-symbolic")
+    meta = BackendMeta(
+        backend_id = "flatpak",
+        display_name = "Flatpak Packages",
+        API = "1",
+        filter_group = "flatpak",
+        filter_label = "FlatPak",
+        filter_sort_order = 200,
+        show_in_preferences=True,
+        icon_name="package-x-generic-symbolic"
+    )
 
     def is_available(self) -> bool:
         """Return True when the flatpak binary exists and can list apps.

@@ -12,13 +12,16 @@ from bodhi_update.models import UpdateItem
 class SnapBackend(UpdateBackend):
     """Update backend that queries installed Snap packages."""
 
-    meta = BackendMeta(backend_id="snap",
-                       display_name="Snap Packages",
-                       filter_group="snap",
-                       filter_label="Snap",
-                       filter_sort_order=200,
-                       show_in_preferences=True,
-                       icon_name="package-x-generic-symbolic")
+    meta = BackendMeta(
+        backend_id = "snap",
+        display_name = "Snap Packages",
+        API = "1",
+        filter_group = "snap",
+        filter_label = "Snap",
+        filter_sort_order = 200,
+        show_in_preferences=True,
+        icon_name="package-x-generic-symbolic"
+    )
 
     def is_available(self) -> bool:
         """Return True only if snap exists and snapd is responsive.
