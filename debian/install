@@ -7,4 +7,4 @@ data/libexec/bodhi-update-manager-root usr/libexec/
 data/polkit/org.bodhi.updatemanager.policy usr/share/polkit-1/actions/
 data/systemd/bodhi-update-manager-refresh.service usr/lib/systemd/system/
 data/systemd/bodhi-update-manager-refresh.timer usr/lib/systemd/system/
-src/* usr/lib/bodhi-update-manager/bodhi_update
+bodhi_update/* usr/lib/bodhi-update-manager/bodhi_update

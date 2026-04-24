@@ -3,7 +3,7 @@ set -euo pipefail
 
 VERSION=$(dpkg-parsechangelog -S Version | cut -d- -f1-2)
 
-cat > src/_version.py <<EOF
+cat > bodhi_update/_version.py <<EOF
 """Version information for the Update Manager."""
 
 __version__ = "${VERSION}"
