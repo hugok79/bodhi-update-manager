@@ -4,13 +4,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from gettext import gettext as _
+from gettext import bindtextdomain, gettext as _, textdomain
 from typing import Dict, List, Tuple
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+
+APP_NAME = "bodhi-update-manager"
+bindtextdomain(APP_NAME, "/usr/share/locale")
+textdomain(APP_NAME)
 
 from bodhi_update._version import __version__
 ABOUT_TEXT = _(
