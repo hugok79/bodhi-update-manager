@@ -77,7 +77,8 @@ Contributors:
         super().__init__(
             title=_("About"),
             transient_for=parent,
-            flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+            modal=True,
+            destroy_with_parent=True
         )
         self.set_border_width(10)
         self.set_default_size(600, 400)
@@ -179,7 +180,7 @@ class PreferencesDialog(Gtk.Dialog):
         super().__init__(
             title=labels.title,
             transient_for=parent,
-            flags=Gtk.DialogFlags.MODAL,
+            modal=True,
         )
 
         self.add_button(labels.cancel_label, Gtk.ResponseType.CANCEL)
