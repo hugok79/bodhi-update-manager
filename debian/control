@@ -18,7 +18,6 @@ Architecture: all
 Depends:
  ${misc:Depends},
  ${python3:Depends},
- polkitd | policykit-1,
  pkexec | policykit-1,
  python3-gi,
  python3-apt,
