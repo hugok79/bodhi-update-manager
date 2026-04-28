@@ -392,12 +392,12 @@ msgid "Unknown"
 msgstr "Neznámé"
 
 #: bodhi_update/status_messages.py:60
-#, fuzzy, python-format
+#, python-format
 msgid "%(count)d update available · Download: %(size)s"
 msgid_plural "%(count)d updates available · Download: %(size)s"
-msgstr[0] "%(count)d aktualizací k dispozici · Stáhnout: %(size)s"
-msgstr[1] "%(count)d aktualizací k dispozici · Stáhnout: %(size)s"
-msgstr[2] "%(count)d aktualizací k dispozici · Stáhnout: %(size)s"
+msgstr[0] "%(count)d aktualizace k dispozici · Ke stažení: %(size)s"
+msgstr[1] "%(count)d aktualizace k dispozici · Ke stažení: %(size)s"
+msgstr[2] "%(count)d aktualizací k dispozici · Ke stažení: %(size)s"
 
 #: bodhi_update/status_messages.py:70
 #, python-format
@@ -410,20 +410,20 @@ msgid "%(message)s (includes %(extras)s)"
 msgstr "%(message)s (zahrnuje %(extras)s)"
 
 #: bodhi_update/status_messages.py:81
-#, fuzzy, python-format
+#, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] "%(n)d podržený/blokovaný balíček skryt"
-msgstr[1] "%(n)d podržený/blokovaný balíček skryt"
-msgstr[2] "%(n)d podržený/blokovaný balíček skryt"
+msgstr[0] "Skryt %(n)d podržený/blokovaný balíček"
+msgstr[1] "Skryty %(n)d podržené/blokované balíčky"
+msgstr[2] "Skryto %(n)d podržených/blokovaných balíčků"
 
 #: bodhi_update/status_messages.py:109
-#, fuzzy, python-format
+#, python-format
 msgid "%(count)d update selected · Download: %(size)s"
 msgid_plural "%(count)d updates selected · Download: %(size)s"
-msgstr[0] "%(count)d aktualizací vybráno · Stáhnout: %(size)s"
-msgstr[1] "%(count)d aktualizací vybráno · Stáhnout: %(size)s"
-msgstr[2] "%(count)d aktualizací vybráno · Stáhnout: %(size)s"
+msgstr[0] "Vybrána %(count)d aktualizace · Ke stažení: %(size)s"
+msgstr[1] "Vybrány %(count)d aktualizace · Ke stažení: %(size)s"
+msgstr[2] "Vybráno %(count)d aktualizací · Ke stažení: %(size)s"
 
 #: data/applications//bodhi-update-manager.in:7
 #: data/applications//bodhi-update-manager-tray.in:7

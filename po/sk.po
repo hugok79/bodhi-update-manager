@@ -389,12 +389,12 @@ msgid "Unknown"
 msgstr "Neznáme"
 
 #: bodhi_update/status_messages.py:60
-#, fuzzy, python-format
+#, python-format
 msgid "%(count)d update available · Download: %(size)s"
 msgid_plural "%(count)d updates available · Download: %(size)s"
-msgstr[0] "%(count)d dostupných aktualizácií · Stiahnuť: %(size)s"
-msgstr[1] "%(count)d dostupných aktualizácií · Stiahnuť: %(size)s"
-msgstr[2] "%(count)d dostupných aktualizácií · Stiahnuť: %(size)s"
+msgstr[0] "%(count)d dostupná aktualizácia · Na stiahnutie: %(size)s"
+msgstr[1] "%(count)d dostupné aktualizácie · Na stiahnutie: %(size)s"
+msgstr[2] "%(count)d dostupných aktualizácií · Na stiahnutie: %(size)s"
 
 #: bodhi_update/status_messages.py:70
 #, python-format
@@ -408,20 +408,20 @@ msgid "%(message)s (includes %(extras)s)"
 msgstr "%(message)s (zahŕňa %(extras)s)"
 
 #: bodhi_update/status_messages.py:81
-#, fuzzy, python-format
+#, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] "%(n)d podržaný/blokovaný balíček skrytý"
-msgstr[1] "%(n)d podržaný/blokovaný balíček skrytý"
-msgstr[2] "%(n)d podržaný/blokovaný balíček skrytý"
+msgstr[0] "Skrytý %(n)d podržaný/blokovaný balíček"
+msgstr[1] "Skryté %(n)d podržané/blokované balíčky"
+msgstr[2] "Skrytých %(n)d podržaných/blokovaných balíčkov"
 
 #: bodhi_update/status_messages.py:109
-#, fuzzy, python-format
+#, python-format
 msgid "%(count)d update selected · Download: %(size)s"
 msgid_plural "%(count)d updates selected · Download: %(size)s"
-msgstr[0] "%(count)d vybraných aktualizácií · Stiahnuť: %(size)s"
-msgstr[1] "%(count)d vybraných aktualizácií · Stiahnuť: %(size)s"
-msgstr[2] "%(count)d vybraných aktualizácií · Stiahnuť: %(size)s"
+msgstr[0] "%(count)d vybraná aktualizácia · Na stiahnutie: %(size)s"
+msgstr[1] "%(count)d vybrané aktualizácie · Na stiahnutie: %(size)s"
+msgstr[2] "%(count)d vybraných aktualizácií · Na stiahnutie: %(size)s"
 
 #: data/applications//bodhi-update-manager.in:7
 #: data/applications//bodhi-update-manager-tray.in:7
