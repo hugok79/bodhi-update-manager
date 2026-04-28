@@ -199,9 +199,9 @@ class HoldController:
                 return
 
             if hold:
-                status = N_("Package '%(name)s' is now held.") % {"name": pkg_name}
+                status = _("Package '%(name)s' is now held.") % {"name": pkg_name}
             else:
-                status = N_(
+                status = _(
                     "Package '%(name)s' is no longer held."
                 ) % {"name": pkg_name}
 
