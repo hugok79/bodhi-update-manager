@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 
+_SYSTEM_PREFIX = "/usr/lib/bodhi-update-manager"
 REBOOT_REQUIRED_PATH = "/var/run/reboot-required"
 
 # Privilege tools tried in preference order.
-_PRIVILEGE_TOOL_CANDIDATES = ("pkexec", "sudo", "doas")
+_PRIVILEGE_TOOLS = ("pkexec", "sudo", "doas")
+
+log = logging.getLogger("bodhi-update-manager")
 
 
 def format_size(num_bytes: int) -> str:
@@ -30,9 +34,17 @@ def reboot_required() -> bool:
 
 def find_privilege_tool() -> str | None:
     """Return the first available privilege-escalation binary."""
-    for tool in _PRIVILEGE_TOOL_CANDIDATES:
+
+    sys_installed = os.path.abspath(__file__).startswith(_SYSTEM_PREFIX)
+    for tool in _PRIVILEGE_TOOLS:
+        # If running locally in a terminal do not use pkexec
+        if tool == "pkexec" and not sys_installed:
+            continue
         if shutil.which(tool):
+            log.debug("Privilege Tool: %s", tool)
             return tool
+
+    log.error("No Privilege Tool found.")
     return None
 
 
