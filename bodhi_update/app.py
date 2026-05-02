@@ -44,7 +44,8 @@ from bodhi_update.utils import (  # noqa: E402
 
 APP_NAME = "bodhi-update-manager"
 
-logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.DEBUG,
+                    format="%(levelname)-5s [%(filename)s:%(lineno)d] %(message)s")
 log = logging.getLogger("APP_NAME")
 
 bindtextdomain(APP_NAME, "/usr/share/locale")
