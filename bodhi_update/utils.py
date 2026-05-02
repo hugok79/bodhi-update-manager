@@ -6,13 +6,14 @@ import logging
 import os
 import shutil
 
-_SYSTEM_PREFIX = "/usr/lib/bodhi-update-manager"
+APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
+
+_SYSTEM_PREFIX = f"/usr/lib/"
 REBOOT_REQUIRED_PATH = "/var/run/reboot-required"
 
 # Privilege tools tried in preference order.
 _PRIVILEGE_TOOLS = ("pkexec", "sudo", "doas")
-
-log = logging.getLogger("bodhi-update-manager")
 
 
 def format_size(num_bytes: int) -> str:
@@ -41,7 +42,7 @@ def find_privilege_tool() -> str | None:
         if tool == "pkexec" and not sys_installed:
             continue
         if shutil.which(tool):
-            log.debug("Privilege Tool: %s", tool)
+            log.debug("Privilege Tool: %s, %d", tool, sys_installed)
             return tool
 
     log.error("No Privilege Tool found.")

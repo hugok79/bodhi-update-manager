@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from gettext import bindtextdomain, gettext as _, ngettext as N_, textdomain
 from typing import Iterable
+
 from bodhi_update.models import CONSTRAINT_BLOCKED, CONSTRAINT_HELD
 from bodhi_update.utils import format_size, reboot_required
 
 APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
+
 bindtextdomain(APP_NAME, "/usr/share/locale")
 textdomain(APP_NAME)
 

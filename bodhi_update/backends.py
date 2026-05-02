@@ -13,7 +13,8 @@ from typing import Dict, List
 
 from bodhi_update.models import UpdateItem
 
-_log = logging.getLogger(__name__)
+APP_NAME = "bodhi-update-manager"
+log = logging.getLogger(APP_NAME)
 _API = "1"
 
 @dataclass(frozen=True)
@@ -173,11 +174,11 @@ class BackendRegistry:
         bid = backend.backend_id
 
         if bid in self._backends:
-            _log.warning("Duplicate backend_id %r, skipping", bid)
+            log.warning("Duplicate backend_id %r, skipping", bid)
             return
 
         self._backends[bid] = backend
-        _log.debug("Registered backend: %s", bid)
+        log.debug("Registered backend: %s", bid)
 
     def get_backend(self, backend_id: str) -> UpdateBackend | None:
         """Return a registered backend by ID, or None if not found."""
@@ -270,7 +271,7 @@ def discover_plugins() -> list[type[UpdateBackend]]:
     """Scan the built-in plugins package for concrete UpdateBackend classes."""
     plugins_dir = Path(__file__).parent / "plugins"
     if not plugins_dir.exists():
-        _log.debug("Built-in plugins directory %r does not exist", plugins_dir)
+        log.debug("Built-in plugins directory %r does not exist", plugins_dir)
         return []
 
     discovered: list[type[UpdateBackend]] = []
@@ -286,7 +287,7 @@ def discover_plugins() -> list[type[UpdateBackend]]:
         try:
             module = import_module(module_name)
         except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
-            _log.debug("Skipping plugin module %r: %s", module_name, exc)
+            log.debug("Skipping plugin module %r: %s", module_name, exc)
             continue
 
         for _, obj in inspect.getmembers(module, inspect.isclass):
@@ -309,11 +310,11 @@ def discover_entrypoint_plugins() -> list[type[UpdateBackend]]:
         try:
             obj = ep.load()
         except (ImportError, RuntimeError, SyntaxError, TypeError) as exc:
-            _log.debug("Skipping entry point %r: %s", ep.name, exc)
+            log.debug("Skipping entry point %r: %s", ep.name, exc)
             continue
 
         if not _is_valid_backend_class_any_module(obj):
-            _log.debug(
+            log.debug(
                 "Skipping entry point %r: not a valid backend class",
                 ep.name,
             )
@@ -363,7 +364,7 @@ def initialize_registry() -> None:
         try:
             instance = backend_cls()
         except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
-            _log.warning(
+            log.warning(
                 "Failed to instantiate backend %r: %s",
                 backend_cls.__name__,
                 exc,
@@ -374,7 +375,7 @@ def initialize_registry() -> None:
         assert meta is not None  # guaranteed by __init_subclass__
 
         if meta.API != _API:
-            _log.warning(
+            log.warning(
                 "Skipping backend %r: incompatible plugin API %r "
                 "(expected %r)",
                 backend_cls.__name__,
@@ -385,7 +386,7 @@ def initialize_registry() -> None:
 
         bid = instance.backend_id
         if reg.get_backend(bid) is not None:
-            _log.warning(
+            log.warning(
                 "Duplicate backend_id %r from %r; skipping.",
                 bid,
                 backend_cls.__name__,
@@ -395,6 +396,6 @@ def initialize_registry() -> None:
         reg.register(instance)
 
     if reg.get_backend("apt") is None:
-        _log.warning(
+        log.warning(
             "APT backend wasn't registered. Package updates may be unavailable."
         )

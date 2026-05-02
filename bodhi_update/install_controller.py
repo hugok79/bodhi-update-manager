@@ -14,9 +14,9 @@ from gi.repository import GLib, Vte
 
 from bodhi_update.utils import find_privilege_tool
 
-log = logging.getLogger(__name__)
-
 APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
+
 bindtextdomain(APP_NAME, "/usr/share/locale")
 textdomain(APP_NAME)
 

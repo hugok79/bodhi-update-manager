@@ -8,6 +8,7 @@ pre-created in tray mode, so GTK can't implicitly show it at startup.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 from typing import TYPE_CHECKING
@@ -37,12 +38,15 @@ from gi.repository import GLib, Gtk  # noqa: E402
 if TYPE_CHECKING:
     from bodhi_update.app import UpdateManagerApplication
 
+APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
+
 
 def _read_pref(key: str, default: bool = True) -> bool:
     """Read a single boolean preference from the shared prefs file."""
     config_home = os.environ.get("XDG_CONFIG_HOME",
                                  os.path.expanduser("~/.config"))
-    path = os.path.join(config_home, "bodhi-update-manager", "prefs.json")
+    path = os.path.join(config_home, APP_NAME, "prefs.json")
 
     try:
         with open(path, "r", encoding="utf-8") as config:
@@ -231,7 +235,7 @@ class TrayIcon:
         else:
             tooltip = "Update Manager - Updates available"
 
-        self._indicator.set_icon_full(self._ICON_NAME, tooltip)
+        # self._indicator.set_icon_full(self._ICON_NAME, tooltip)
 
     # ------------------------------------------------------------------
     # Lifecycle

@@ -16,9 +16,9 @@ from bodhi_update.install_controller import build_hold_argv
 from bodhi_update.models import CONSTRAINT_NORMAL
 from bodhi_update.utils import format_size
 
-log = logging.getLogger(__name__)
-
 APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
+
 bindtextdomain(APP_NAME, "/usr/share/locale")
 textdomain(APP_NAME)
 

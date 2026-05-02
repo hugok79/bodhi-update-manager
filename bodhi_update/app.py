@@ -36,18 +36,20 @@ from bodhi_update.status_messages import (  # noqa: E402
     format_update_count_status, hidden_held_count, ready_status_text,
     with_restart_suffix,
 )
+from bodhi_update.tray import TrayIcon  # noqa: E402
 from bodhi_update.utils import (  # noqa: E402
     find_privilege_tool, format_size, get_pkg_severity, reboot_required,
 )
 
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-log = logging.getLogger("bodhi-update-manager")
-logger = logging.getLogger(__name__)
 
 APP_NAME = "bodhi-update-manager"
 
+logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
+log = logging.getLogger("APP_NAME")
+
 bindtextdomain(APP_NAME, "/usr/share/locale")
 textdomain(APP_NAME)
+
 COLUMN_SCHEMA = (
     ("SELECTED", bool),
     ("PACKAGE", str),
@@ -1243,7 +1245,6 @@ class UpdateManagerApplication(Gtk.Application):
         """
         if self._window is None:
             if self._tray_mode:
-                from bodhi_update.tray import TrayIcon  # noqa: PLC0415
                 self._tray = TrayIcon(self)
                 self.hold()  # prevent GLib loop from exiting with no windows
                 self._held_for_tray = True

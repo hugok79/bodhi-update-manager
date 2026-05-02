@@ -7,7 +7,8 @@ import logging
 import os
 from typing import Any
 
-logger = logging.getLogger(__name__)
+APP_NAME = "bodhi-update-manager"
+log = logging.getLogger("APP_NAME")
 
 DEFAULT_PREFS: dict[str, Any] = {
     "show_descriptions": True,
@@ -50,14 +51,14 @@ class PreferencesStore:
             with open(path, "r", encoding="utf-8") as handle:
                 data: Any = json.load(handle)
         except OSError as exc:
-            logger.warning("Could not read prefs file at %s: %s", path, exc)
+            log.warning("Could not read prefs file at %s: %s", path, exc)
             return prefs
         except json.JSONDecodeError as exc:
-            logger.error("Prefs file is corrupted JSON at %s: %s", path, exc)
+            log.error("Prefs file is corrupted JSON at %s: %s", path, exc)
             return prefs
 
         if not isinstance(data, dict):
-            logger.error(
+            log.error(
                 "Prefs file expected a dict but got %s",
                 type(data).__name__,
             )
@@ -80,7 +81,7 @@ class PreferencesStore:
             with open(path, "w", encoding="utf-8") as handle:
                 json.dump(prefs, handle)
         except (OSError, TypeError) as exc:
-            logger.error("Could not save prefs file at %s: %s", path, exc)
+            log.error("Could not save prefs file at %s: %s", path, exc)
             return False
 
         return True
