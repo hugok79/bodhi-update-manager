@@ -39,17 +39,7 @@ _DEV_HELPER = os.path.join(
 
 
 def get_helper_path() -> str:
-    """Return the absolute path to the root helper that pkexec will invoke.
-
-    Resolution order:
-    1. 'BODHI_HELPER_PATH' env var — lets packagers or CI override the path.
-    2. The installed binary at '/usr/libexec/bodhi-update-manager-root'.
-    3. 'data/libexec/bodhi-update-manager-root' in the source tree
-       (development / uninstalled mode).
-    """
-    override = os.environ.get("BODHI_HELPER_PATH")
-    if override:
-        return override
+    """Return the absolute path to the root helper that pkexec will invoke."""
     if os.path.isfile(_INSTALLED_HELPER):
         return _INSTALLED_HELPER
     return _DEV_HELPER
