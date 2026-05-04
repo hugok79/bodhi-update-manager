@@ -145,7 +145,6 @@ class TrayIcon:
             win.hide()
         else:
             log.debug("toogle window show: last count = %d", self._last_count)
-            win.show_all()
             win.present()
             self._shown = True
             # Fixme: Do we want or need this. Maybe on first use only? or not at all?
@@ -164,7 +163,6 @@ class TrayIcon:
         """Show the window and trigger an update check."""
         log.debug("check updates")
         win = self._app.get_or_create_window(no_cache=True)
-        win.show_all()
         win.present()
         self._shown = True
         GLib.idle_add(win.on_check_updates, None)

@@ -112,7 +112,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         # Show a bare window immediately; defer the heavy build to the event loop.
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.add(self.main_box)
-        self.show_all()
         self._build_full_ui(deb_path)
         #GLib.idle_add(self._build_full_ui, deb_path)
 
