@@ -144,7 +144,6 @@ class TrayIcon:
             win.hide()
         else:
             log.debug("toogle window show: last count = %d", self._last_count)
-            win = self._app.get_or_create_window()
             win.show_all()
             win.present()
             self._shown = True
