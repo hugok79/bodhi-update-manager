@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import logging
 import os
 import random
 from gettext import bindtextdomain, gettext as _, textdomain
-
 import gi  # noqa: E402
-gi.require_version("Vte", "2.91") 
-
-from gi.repository import GLib, Vte
-
-from bodhi_update.utils import find_privilege_tool
+gi.require_version("Vte", "2.91")
+from gi.repository import GLib, Vte  # noqa: E402
+from bodhi_update.utils import find_privilege_tool  # noqa: E402
 
 APP_NAME = "bodhi-update-manager"
 log = logging.getLogger(APP_NAME)
@@ -27,23 +25,15 @@ textdomain(APP_NAME)
 # Production path registered in the polkit policy file.
 _INSTALLED_HELPER = "/usr/libexec/bodhi-update-manager-root"
 
-# Development fallback: the source-tree helper at data/libexec/bodhi-update-manager-root,
-# reached by walking two levels up from src/ to the repo root.
-_DEV_HELPER = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),  # src/
-    "..",
-    "data",
-    "libexec",
-    "bodhi-update-manager-root",
-)
+# Development fallback: the source-tree helper at data/libexec/bodhi-update-manager-root
+_DEV_HELPER = Path(__file__).resolve().parents[1] / "data/libexec/bodhi-update-manager-root"
 
 
 def get_helper_path() -> str:
     """Return the absolute path to the root helper that pkexec will invoke."""
     if os.path.isfile(_INSTALLED_HELPER):
         return _INSTALLED_HELPER
-    return _DEV_HELPER
-
+    return str(_DEV_HELPER)
 
 # ---------------------------------------------------------------------------
 # APT argv builders  (no shell — direct exec)
