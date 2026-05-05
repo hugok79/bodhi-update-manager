@@ -5,11 +5,19 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+from pathlib import Path
 
 APP_NAME = "bodhi-update-manager"
 log = logging.getLogger(APP_NAME)
 
-_SYSTEM_PREFIX = f"/usr/lib/"
+try:
+    import magic  # Suggested but optional
+except ImportError:
+    log.debug("Magic module is unavailable")
+    magic = None
+
+
+_SYSTEM_PREFIX = "/usr/lib/"
 REBOOT_REQUIRED_PATH = "/var/run/reboot-required"
 
 # Privilege tools tried in preference order.
@@ -76,3 +84,31 @@ def get_pkg_severity(name: str, category: str, backend: str) -> str:
     if backend == "apt" and name.startswith(_MEDIUM_PREFIXES):
         return "medium"
     return "low"
+
+
+def validate_deb_files(deb_files: list[str]) -> list[str]:
+    """Validate Debian package paths and return absolute Path objects."""
+    validated: list[str] = []
+
+    for deb in deb_files:
+        path = Path(deb).expanduser().resolve()
+
+        log.debug("Deb file path: %s", path)
+
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {deb}")
+
+        if not path.is_file():
+            raise ValueError(f"Not a regular file: {deb}")
+
+        if path.suffix.lower() != ".deb":
+            raise ValueError(f"Not a Debian package: {deb}")
+
+        if magic is not None:
+            file_type = magic.from_file(str(path), mime=True)
+            if file_type != "application/vnd.debian.binary-package":
+                raise ValueError(f"APT cannot open: {deb}")
+
+        validated.append(str(path))
+
+    return validated
