@@ -27,6 +27,7 @@ Depends:
  gir1.2-vte-2.91
 Suggests:
  flatpak,
+ python3-magic,
  snapd
 Description: Update manager for Bodhi Linux
  A graphical update manager for Debian/Ubuntu-based systems with support
