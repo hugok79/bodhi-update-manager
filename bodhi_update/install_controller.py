@@ -10,7 +10,7 @@ from gettext import bindtextdomain, gettext as _, textdomain
 import gi  # noqa: E402
 gi.require_version("Vte", "2.91")
 from gi.repository import GLib, Vte  # noqa: E402
-from bodhi_update.utils import find_privilege_tool  # noqa: E402
+from bodhi_update.utils import find_privilege_tool, validate_deb_files  # noqa: E402
 
 APP_NAME = "bodhi-update-manager"
 log = logging.getLogger(APP_NAME)
@@ -77,14 +77,7 @@ def build_deb_install_argv(deb_path: str) -> list[str]:
         FileNotFoundError: *deb_path* does not exist or is not a regular file.
         RuntimeError: no privilege tool is available.
     """
-    norm_path = os.path.abspath(os.path.expanduser(deb_path))
-
-    if not norm_path.lower().endswith(".deb"):
-        raise ValueError(f"Not a .deb file: {deb_path}")
-
-    if not os.path.isfile(norm_path):
-        raise FileNotFoundError(
-            f"File not found or not a regular file: {deb_path}")
+    norm_path = validate_deb_files([deb_path])[0]
 
     tool = _privilege_tool()
     helper = get_helper_path()
