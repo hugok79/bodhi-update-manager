@@ -230,7 +230,7 @@ class TrayIcon:
                         )
                         if pkg_severity == "high":
                             severity = "high"
-                        elif pkg_severity == "medium":
+                        elif pkg_severity == "medium" and severity != "high":
                             severity = "medium"
                 except (OSError, RuntimeError, ValueError, AttributeError):
                     # Skip failed backends and keep going.
