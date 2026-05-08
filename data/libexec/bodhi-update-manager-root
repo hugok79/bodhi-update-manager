@@ -105,7 +105,7 @@ def _cmd_install_deb(args: list[str], sentinel_path: str | None) -> int:
     _signal_auth_success(sentinel_path)
     # No -y: allow debconf prompts so the VTE terminal can handle them.
     result = subprocess.run(
-        ["apt-get", "install", args[0],
+        ["apt-get", "install", args[0]],
         check=False,
     )
     return result.returncode

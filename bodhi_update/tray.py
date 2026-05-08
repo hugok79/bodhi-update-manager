@@ -74,6 +74,12 @@ class TrayIcon:
     _ICON_NAME = "bodhi-update-manager"
     _ICON_SIZE = 22  # px — standard system-tray icon size
 
+    _ICON_BY_SEVERITY: dict[str, str] = {
+        "low":    "notification_cyan",
+        "medium": "notification_amber",
+        "high":   "notification_red",
+    }
+
     # Background poll interval (seconds).
     _POLL_INTERVAL = 15 * 60  # 15 minutes
     _INITIAL_DELAY = 5  # seconds after startup before first check
@@ -237,13 +243,19 @@ class TrayIcon:
     # ------------------------------------------------------------------
     # Indicator update
     # ------------------------------------------------------------------
+    def _icon_name_for_state(self, count: int, severity: str) -> str:
+        """Return the icon name that matches the current update state."""
+        if count <= 0:
+            return self._ICON_NAME
+        return self._ICON_BY_SEVERITY.get(severity, self._ICON_BY_SEVERITY["low"])
+
     def set_update_count(self, count: int, severity: str = "medium") -> None:
         """Update indicator state from cached update count."""
         self._last_count = count
         if self._indicator is None:
             return
 
-        if count == 0:
+        if count <= 0:
             tooltip = "Update Manager"
         elif severity == "high":
             tooltip = "Update Manager - Security updates available"
@@ -252,7 +264,8 @@ class TrayIcon:
         else:
             tooltip = "Update Manager - Updates available"
 
-        self._indicator.set_icon_full(self._ICON_NAME, tooltip)
+        icon_name = self._icon_name_for_state(count, severity)
+        self._indicator.set_icon_full(icon_name, tooltip)
 
     # ------------------------------------------------------------------
     # Lifecycle
