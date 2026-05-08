@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-04-08 17:34+0200\n"
 "Last-Translator: diekrz2 <diekrz2@bodhilinux.com>\n"
@@ -238,8 +237,7 @@ msgid ""
 msgstr ""
 "Update Manager\n"
 "\n"
-"Un manager di aggiornamenti grafico e leggero per distribuzioni basate su "
-"Debian."
+"Un manager di aggiornamenti grafico e leggero per distribuzioni basate su Debian."
 
 #: bodhi_update/dialogs.py:27
 msgid ""
@@ -256,8 +254,7 @@ msgid ""
 "You should have received a copy of the GNU General Public License\n"
 "along with this program.  If not, see <https://www.gnu.org/licenses/>."
 msgstr ""
-"Questo programma è software libero: è possibile ridistribuirlo e/o "
-"modificarlo\n"
+"Questo programma è software libero: è possibile ridistribuirlo e/o modificarlo\n"
 "secondo i termini della GNU General Public License come pubblicata dalla\n"
 "Free Software Foundation, sia nella versione 3 della Licenza, sia\n"
 "(a propria scelta) in una versione successiva.\n"
@@ -268,8 +265,7 @@ msgstr ""
 "GNU General Public License per maggiori dettagli.\n"
 "\n"
 "Si dovrebbe aver ricevuto una copia della GNU General Public License\n"
-"insieme a questo programma. In caso contrario, vedere <https://www.gnu.org/"
-"licenses/>."
+"insieme a questo programma. In caso contrario, vedere <https://www.gnu.org/licenses/>."
 
 #: bodhi_update/dialogs.py:48
 #, fuzzy
@@ -327,7 +323,7 @@ msgstr "Licenza"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "Backend"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
@@ -363,7 +359,7 @@ msgstr "%(current_status)s — Attenzione: %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s non è riuscito a ottenere gli aggiornamenti. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -439,7 +435,8 @@ msgstr "Esegui l'aiutante privilegiato di Update Manager"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
-msgstr "L'autenticazione è necessaria per installare o aggiornare i pacchetti."
+msgstr ""
+"L'autenticazione è necessaria per installare o aggiornare i pacchetti."
 
 #~ msgid "Show Flatpak updates"
 #~ msgstr "Mostra aggiornamenti Flatpak"
@@ -473,16 +470,15 @@ msgstr "L'autenticazione è necessaria per installare o aggiornare i pacchetti."
 #~ msgstr "Generato processo installazione (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
-#~ "Inserisci la propria password nel terminale sotto. Per ragioni di "
-#~ "sicurezza, niente apparirà durante l'inserimento."
+#~ "Inserisci la propria password nel terminale sotto. Per ragioni di sicurezza,"
+#~ " niente apparirà durante l'inserimento."
 
 #~ msgid "Terminal auth in use — revealing VTE for password entry."
 #~ msgstr ""
-#~ "Autenticazione in terminale in uso — rivelo VTE per l'inserimento "
-#~ "password."
+#~ "Autenticazione in terminale in uso — rivelo VTE per l'inserimento password."
 
 #, python-format
 #~ msgid "Starting installation: %s"

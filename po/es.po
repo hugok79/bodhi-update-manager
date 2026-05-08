@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Alejandro Díaz <escuelaslinux@gmail.com>\n"
@@ -148,7 +147,7 @@ msgstr "Mostrar descripciones"
 
 #: bodhi_update/app.py:510
 msgid "Show held/blocked packages"
-msgstr ""
+msgstr "Mostrar paquetes retenidos/bloqueados"
 
 #: bodhi_update/app.py:511
 msgid "Cancel"
@@ -170,7 +169,7 @@ msgstr "Instalando actualizaciones..."
 
 #: bodhi_update/app.py:836
 msgid "Unhold package"
-msgstr ""
+msgstr "Desbloquear paquete"
 
 #: bodhi_update/app.py:836
 #, fuzzy
@@ -184,7 +183,7 @@ msgstr "Paquete del sistema"
 
 #: bodhi_update/app.py:928
 msgid "Blocked by held package or dependency constraints"
-msgstr ""
+msgstr "Bloqueado por paquete retenido o restricciones de dependencia"
 
 #: bodhi_update/app.py:934 bodhi_update/app.py:974
 #: bodhi_update/hold_controller.py:128
@@ -244,8 +243,7 @@ msgid ""
 msgstr ""
 "Gestor de actualizaciones\n"
 "\n"
-"Un gestor de actualizaciones gráfico ligero para distribuciones basadas en "
-"Debian."
+"Un gestor de actualizaciones gráfico ligero para distribuciones basadas en Debian."
 
 #: bodhi_update/dialogs.py:27
 msgid ""
@@ -273,8 +271,7 @@ msgstr ""
 "Licencia Pública General GNU para más detalles.\n"
 "\n"
 "Deberías haber recibido una copia de la Licencia Pública General GNU\n"
-"along con este programa. Si no es así, consulta <https://www.gnu.org/"
-"licenses/>."
+"along con este programa. Si no es así, consulta <https://www.gnu.org/licenses/>."
 
 #: bodhi_update/dialogs.py:48
 #, fuzzy
@@ -332,15 +329,15 @@ msgstr "Licencia"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "Backends"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
-msgstr ""
+msgstr "Bloqueando paquete..."
 
 #: bodhi_update/hold_controller.py:150
 msgid "Unlocking package..."
-msgstr ""
+msgstr "Desbloqueando paquete..."
 
 #: bodhi_update/hold_controller.py:161 bodhi_update/refresh_controller.py:167
 #, fuzzy
@@ -349,17 +346,17 @@ msgstr "Esperando autenticación..."
 
 #: bodhi_update/hold_controller.py:196
 msgid "apt-mark failed (unknown error)"
-msgstr ""
+msgstr "apt-mark falló (error desconocido)"
 
 #: bodhi_update/hold_controller.py:202
 #, python-format
 msgid "Package '%(name)s' is now held."
-msgstr ""
+msgstr "El paquete '%(name)s' está ahora retenido."
 
 #: bodhi_update/hold_controller.py:205
 #, python-format
 msgid "Package '%(name)s' is no longer held."
-msgstr ""
+msgstr "El paquete '%(name)s' ya no está retenido."
 
 #: bodhi_update/refresh_controller.py:88
 #, python-format
@@ -369,7 +366,7 @@ msgstr "%(current_status)s — Advertencia: %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s get_updates falló. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -422,8 +419,8 @@ msgstr "%(message)s (incluye %(extras)s)"
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%(n)d paquete retenido/bloqueado oculto"
+msgstr[1] "%(n)d paquetes retenidos/bloqueados ocultos"
 
 #: bodhi_update/status_messages.py:109
 #, fuzzy, python-format
@@ -436,14 +433,15 @@ msgstr[1] "%(count)d actualización seleccionada · Descarga: %(size)s"
 #: data/applications//bodhi-update-manager-tray.in:7
 msgid "Install system updates and local packages for Bodhi Linux"
 msgstr ""
+"Instalar actualizaciones del sistema y paquetes locales para Bodhi Linux"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:1
 msgid "Run the Update Manager privileged helper"
-msgstr ""
+msgstr "Ejecutar el ayudante privilegiado del Gestor de Actualizaciones"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
-msgstr ""
+msgstr "Se requiere autenticación para instalar o actualizar paquetes."
 
 #~ msgid "Show Flatpak updates"
 #~ msgstr "Mostrar actualizaciones de Flatpak"
@@ -478,8 +476,8 @@ msgstr ""
 #~ msgstr "Proceso de instalación iniciado (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
 #~ "Ingrese su contraseña en la terminal a continuación. Por seguridad, no se "
 #~ "mostrará nada mientras escribe."
@@ -530,8 +528,8 @@ msgstr ""
 #~ "Installing from multiple package sources simultaneously is not yet "
 #~ "supported. Please select packages from one source type only."
 #~ msgstr ""
-#~ "La instalación desde múltiples fuentes de paquetes simultáneamente aún no "
-#~ "es compatible. Seleccione paquetes de un solo tipo de fuente."
+#~ "La instalación desde múltiples fuentes de paquetes simultáneamente aún no es"
+#~ " compatible. Seleccione paquetes de un solo tipo de fuente."
 
 #, python-format
 #~ msgid "Requested installation for unknown backend: %(backend_id)s"

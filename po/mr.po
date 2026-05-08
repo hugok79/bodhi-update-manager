@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Automatically generated\n"
@@ -148,7 +147,7 @@ msgstr "वर्णन दाखवा"
 
 #: bodhi_update/app.py:510
 msgid "Show held/blocked packages"
-msgstr ""
+msgstr "होल्ड/ब्लॉक केलेले पॅकेजेस दाखवा"
 
 #: bodhi_update/app.py:511
 msgid "Cancel"
@@ -170,7 +169,7 @@ msgstr "अपडेट्स इंस्टॉल करत आहे..."
 
 #: bodhi_update/app.py:836
 msgid "Unhold package"
-msgstr ""
+msgstr "पॅकेज होल्डमधून काढा"
 
 #: bodhi_update/app.py:836
 #, fuzzy
@@ -184,7 +183,7 @@ msgstr "सिस्टम पॅकेज"
 
 #: bodhi_update/app.py:928
 msgid "Blocked by held package or dependency constraints"
-msgstr ""
+msgstr "होल्ड केलेल्या पॅकेज किंवा डिपेंडन्सी मर्यादांमुळे ब्लॉक केलेले"
 
 #: bodhi_update/app.py:934 bodhi_update/app.py:974
 #: bodhi_update/hold_controller.py:128
@@ -259,8 +258,7 @@ msgid ""
 "You should have received a copy of the GNU General Public License\n"
 "along with this program.  If not, see <https://www.gnu.org/licenses/>."
 msgstr ""
-"हा प्रोग्राम मोफत सॉफ्टवेअर आहे: आपण याचे पुनर्वितरण करू शकता आणि/किंवा सुधारित करू "
-"शकता\n"
+"हा प्रोग्राम मोफत सॉफ्टवेअर आहे: आपण याचे पुनर्वितरण करू शकता आणि/किंवा सुधारित करू शकता\n"
 "GNU जनरल पब्लिक लायसन्सच्या अटींनुसार, फ्री सॉफ्टवेअर फाउंडेशनद्वारे प्रकाशित,\n"
 "लायसन्सची आवृत्ती 3, किंवा (आपल्या पर्यायानुसार) कोणतीही नंतरची आवृत्ती.\n"
 "\n"
@@ -328,15 +326,15 @@ msgstr "परवाना"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "बॅकएंड्स"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
-msgstr ""
+msgstr "पॅकेज लॉक करत आहे..."
 
 #: bodhi_update/hold_controller.py:150
 msgid "Unlocking package..."
-msgstr ""
+msgstr "पॅकेज अनलॉक करत आहे..."
 
 #: bodhi_update/hold_controller.py:161 bodhi_update/refresh_controller.py:167
 #, fuzzy
@@ -345,17 +343,17 @@ msgstr "प्रमाणीकरणाची वाट पाहत आहे
 
 #: bodhi_update/hold_controller.py:196
 msgid "apt-mark failed (unknown error)"
-msgstr ""
+msgstr "apt-mark अयशस्वी (अज्ञात त्रुटी)"
 
 #: bodhi_update/hold_controller.py:202
 #, python-format
 msgid "Package '%(name)s' is now held."
-msgstr ""
+msgstr "पॅकेज '%(name)s' आता होल्ड केले आहे."
 
 #: bodhi_update/hold_controller.py:205
 #, python-format
 msgid "Package '%(name)s' is no longer held."
-msgstr ""
+msgstr "पॅकेज '%(name)s' यापुढे होल्ड केलेले नाही."
 
 #: bodhi_update/refresh_controller.py:88
 #, python-format
@@ -365,7 +363,7 @@ msgstr "%(current_status)s — चेतावणी: %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s get_updates अयशस्वी. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -418,8 +416,8 @@ msgstr "%(message)s (समाविष्ट %(extras)s)"
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%(n)d होल्ड/ब्लॉक केलेले पॅकेज लपवले"
+msgstr[1] "%(n)d होल्ड/ब्लॉक केलेले पॅकेजेस लपवली"
 
 #: bodhi_update/status_messages.py:109
 #, fuzzy, python-format
@@ -431,15 +429,16 @@ msgstr[1] "%(count)d अद्ययावत निवडले · डाउन
 #: data/applications//bodhi-update-manager.in:7
 #: data/applications//bodhi-update-manager-tray.in:7
 msgid "Install system updates and local packages for Bodhi Linux"
-msgstr ""
+msgstr "बोधी लिनक्ससाठी सिस्टम अद्यतने आणि स्थानिक पॅकेजेस स्थापित करा"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:1
 msgid "Run the Update Manager privileged helper"
-msgstr ""
+msgstr "अद्ययावत व्यवस्थापकाचे विशेषाधिकारित सहाय्यक चालवा"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
 msgstr ""
+"पॅकेजेस स्थापित करण्यासाठी किंवा अद्यतनित करण्यासाठी प्रमाणीकरण आवश्यक आहे."
 
 #~ msgid "Show Flatpak updates"
 #~ msgstr "फ्लॅटपॅक अपडेट्स दाखवा"
@@ -473,14 +472,15 @@ msgstr ""
 #~ msgstr "स्थापना प्रक्रिया सुरू केली (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
-#~ "खालील टर्मिनलमध्ये आपला पासवर्ड टाका. सुरक्षिततेसाठी, टाइप करताना काहीही दिसणार "
-#~ "नाही."
+#~ "खालील टर्मिनलमध्ये आपला पासवर्ड टाका. सुरक्षिततेसाठी, टाइप करताना काहीही "
+#~ "दिसणार नाही."
 
 #~ msgid "Terminal auth in use — revealing VTE for password entry."
-#~ msgstr "टर्मिनल प्रमाणीकरण वापरात आहे — पासवर्ड प्रविष्टीसाठी VTE दर्शवित आहे."
+#~ msgstr ""
+#~ "टर्मिनल प्रमाणीकरण वापरात आहे — पासवर्ड प्रविष्टीसाठी VTE दर्शवित आहे."
 
 #, python-format
 #~ msgid "Starting installation: %s"
@@ -521,8 +521,8 @@ msgstr ""
 #~ "Installing from multiple package sources simultaneously is not yet "
 #~ "supported. Please select packages from one source type only."
 #~ msgstr ""
-#~ "एकाच वेळी एकाधिक पॅकेज स्त्रोतांमधून इंस्टॉल करणे अद्याप समर्थित नाही. कृपया एकाच "
-#~ "प्रकारच्या स्त्रोतातील पॅकेजेस निवडा."
+#~ "एकाच वेळी एकाधिक पॅकेज स्त्रोतांमधून इंस्टॉल करणे अद्याप समर्थित नाही. कृपया"
+#~ " एकाच प्रकारच्या स्त्रोतातील पॅकेजेस निवडा."
 
 #, python-format
 #~ msgid "Requested installation for unknown backend: %(backend_id)s"

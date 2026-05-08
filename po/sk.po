@@ -7,8 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Štefan Uram <the_waiter@bodhilinux.com>\n"
@@ -266,8 +265,7 @@ msgstr ""
 "PREDAJNOSTI alebo VHODNOSTI NA KONKRÉTNY ÚČEL. Podrobnosti nájdete\n"
 "v licencii GNU General Public License.\n"
 "\n"
-"S týmto programom by ste mali dostať kópiu licencie GNU General Public "
-"License.\n"
+"S týmto programom by ste mali dostať kópiu licencie GNU General Public License.\n"
 "Ak nie, pozrite si https://www.gnu.org/licenses/"
 
 #: bodhi_update/dialogs.py:48
@@ -305,6 +303,8 @@ msgid ""
 "Copyright © 2026 Joseph “flux.abyss” Wiley\n"
 "\n"
 msgstr ""
+"Autorské práva © 2026 Joseph „flux.abyss“ Wiley\n"
+"\n"
 
 #: bodhi_update/dialogs.py:71
 msgid "Website"
@@ -378,7 +378,8 @@ msgstr "%(message)s  Vyžaduje sa reštart."
 #: bodhi_update/status_messages.py:49
 msgid "System is up to date. No pending updates in cached package data."
 msgstr ""
-"Systém je aktuálny. Žiadne čakajúce aktualizácie v uložených údajoch balíkov."
+"Systém je aktuálny. Žiadne čakajúce aktualizácie v uložených údajoch "
+"balíkov."
 
 #: bodhi_update/status_messages.py:51
 msgid "System is up to date."

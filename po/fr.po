@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Automatically generated\n"
@@ -74,7 +73,8 @@ msgstr "À propos"
 
 #: bodhi_update/app.py:267
 msgid "A system restart is required to complete the update."
-msgstr "Un redémarrage du système est nécessaire pour terminer la mise à jour."
+msgstr ""
+"Un redémarrage du système est nécessaire pour terminer la mise à jour."
 
 #: bodhi_update/app.py:271
 msgid "Restart Now"
@@ -148,7 +148,7 @@ msgstr "Afficher les descriptions"
 
 #: bodhi_update/app.py:510
 msgid "Show held/blocked packages"
-msgstr ""
+msgstr "Afficher les paquets bloqués/maintenus"
 
 #: bodhi_update/app.py:511
 msgid "Cancel"
@@ -170,7 +170,7 @@ msgstr "Installation des mises à jour..."
 
 #: bodhi_update/app.py:836
 msgid "Unhold package"
-msgstr ""
+msgstr "Débloquer le paquet"
 
 #: bodhi_update/app.py:836
 #, fuzzy
@@ -184,7 +184,7 @@ msgstr "Paquet système"
 
 #: bodhi_update/app.py:928
 msgid "Blocked by held package or dependency constraints"
-msgstr ""
+msgstr "Bloqué par un paquet maintenu ou des contraintes de dépendances"
 
 #: bodhi_update/app.py:934 bodhi_update/app.py:974
 #: bodhi_update/hold_controller.py:128
@@ -242,8 +242,7 @@ msgid ""
 msgstr ""
 "Gestionnaire de mises à jour\n"
 "\n"
-"Un gestionnaire de mises à jour graphique léger pour les distributions "
-"basées sur Debian."
+"Un gestionnaire de mises à jour graphique léger pour les distributions basées sur Debian."
 
 #: bodhi_update/dialogs.py:27
 msgid ""
@@ -260,10 +259,8 @@ msgid ""
 "You should have received a copy of the GNU General Public License\n"
 "along with this program.  If not, see <https://www.gnu.org/licenses/>."
 msgstr ""
-"Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le "
-"modifier\n"
-"selon les termes de la licence GNU General Public License telle que publiée "
-"par\n"
+"Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier\n"
+"selon les termes de la licence GNU General Public License telle que publiée par\n"
 "la Free Software Foundation, soit la version 3 de la licence, soit\n"
 "(à votre discrétion) toute version ultérieure.\n"
 "\n"
@@ -273,8 +270,7 @@ msgstr ""
 "licence GNU General Public License pour plus de détails.\n"
 "\n"
 "Vous devriez avoir reçu une copie de la licence GNU General Public License\n"
-"avec ce programme. Si ce n'est pas le cas, consultez <https://www.gnu.org/"
-"licenses/>."
+"avec ce programme. Si ce n'est pas le cas, consultez <https://www.gnu.org/licenses/>."
 
 #: bodhi_update/dialogs.py:48
 #, fuzzy
@@ -332,15 +328,15 @@ msgstr "Licence"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "Backends"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
-msgstr ""
+msgstr "Verrouillage du paquet..."
 
 #: bodhi_update/hold_controller.py:150
 msgid "Unlocking package..."
-msgstr ""
+msgstr "Déverrouillage du paquet..."
 
 #: bodhi_update/hold_controller.py:161 bodhi_update/refresh_controller.py:167
 #, fuzzy
@@ -349,17 +345,17 @@ msgstr "En attente d'authentification..."
 
 #: bodhi_update/hold_controller.py:196
 msgid "apt-mark failed (unknown error)"
-msgstr ""
+msgstr "apt-mark a échoué (erreur inconnue)"
 
 #: bodhi_update/hold_controller.py:202
 #, python-format
 msgid "Package '%(name)s' is now held."
-msgstr ""
+msgstr "Le paquet '%(name)s' est maintenant maintenu."
 
 #: bodhi_update/hold_controller.py:205
 #, python-format
 msgid "Package '%(name)s' is no longer held."
-msgstr ""
+msgstr "Le paquet '%(name)s' n'est plus maintenu."
 
 #: bodhi_update/refresh_controller.py:88
 #, python-format
@@ -369,7 +365,7 @@ msgstr "%(current_status)s — Avertissement : %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s get_updates a échoué. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -391,7 +387,8 @@ msgstr "%(message)s  Redémarrage requis."
 #: bodhi_update/status_messages.py:49
 #, fuzzy
 msgid "System is up to date. No pending updates in cached package data."
-msgstr "Le système est à jour. Les données de paquets en cache sont affichées."
+msgstr ""
+"Le système est à jour. Les données de paquets en cache sont affichées."
 
 #: bodhi_update/status_messages.py:51
 msgid "System is up to date."
@@ -422,8 +419,8 @@ msgstr "%(message)s (inclut %(extras)s)"
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%(n)d paquet bloqué/maintenu masqué"
+msgstr[1] "%(n)d paquets bloqués/maintenus masqués"
 
 #: bodhi_update/status_messages.py:109
 #, fuzzy, python-format
@@ -436,14 +433,17 @@ msgstr[1] "%(count)d mise à jour sélectionnée · Téléchargement : %(size)s"
 #: data/applications//bodhi-update-manager-tray.in:7
 msgid "Install system updates and local packages for Bodhi Linux"
 msgstr ""
+"Installer les mises à jour du système et les paquets locaux pour Bodhi Linux"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:1
 msgid "Run the Update Manager privileged helper"
-msgstr ""
+msgstr "Exécuter l'assistant privilégié du gestionnaire de mises à jour"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
 msgstr ""
+"Une authentification est requise pour installer ou mettre à jour des "
+"paquets."
 
 #~ msgid "Show Flatpak updates"
 #~ msgstr "Afficher les mises à jour Flatpak"
@@ -477,16 +477,16 @@ msgstr ""
 #~ msgstr "Processus d'installation lancé (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
-#~ "Saisissez votre mot de passe dans le terminal ci-dessous. Pour des "
-#~ "raisons de sécurité, rien ne s'affichera pendant la saisie."
+#~ "Saisissez votre mot de passe dans le terminal ci-dessous. Pour des raisons "
+#~ "de sécurité, rien ne s'affichera pendant la saisie."
 
 #~ msgid "Terminal auth in use — revealing VTE for password entry."
 #~ msgstr ""
-#~ "Authentification par terminal en cours — affichage du VTE pour la saisie "
-#~ "du mot de passe."
+#~ "Authentification par terminal en cours — affichage du VTE pour la saisie du "
+#~ "mot de passe."
 
 #, python-format
 #~ msgid "Starting installation: %s"
@@ -529,9 +529,9 @@ msgstr ""
 #~ "Installing from multiple package sources simultaneously is not yet "
 #~ "supported. Please select packages from one source type only."
 #~ msgstr ""
-#~ "L'installation à partir de plusieurs sources de paquets simultanément "
-#~ "n'est pas encore prise en charge. Veuillez sélectionner des paquets d'un "
-#~ "seul type de source."
+#~ "L'installation à partir de plusieurs sources de paquets simultanément n'est "
+#~ "pas encore prise en charge. Veuillez sélectionner des paquets d'un seul type"
+#~ " de source."
 
 #, python-format
 #~ msgid "Requested installation for unknown backend: %(backend_id)s"

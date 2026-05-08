@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bodhi-update-manager 0.1-3\n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-03-27 14:13-0400\n"
 "Last-Translator: Automatically generated\n"
@@ -16,8 +15,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #: bodhi_update/app.py:89 bodhi_update/dialogs.py:70
 #: data/applications//bodhi-update-manager.in:5
@@ -149,7 +147,7 @@ msgstr "Паказаць апісанні"
 
 #: bodhi_update/app.py:510
 msgid "Show held/blocked packages"
-msgstr ""
+msgstr "Паказаць затрыманыя/заблакаваныя пакеты"
 
 #: bodhi_update/app.py:511
 msgid "Cancel"
@@ -171,7 +169,7 @@ msgstr "Усталёўка абнаўленняў..."
 
 #: bodhi_update/app.py:836
 msgid "Unhold package"
-msgstr ""
+msgstr "Зняць затрыманне пакета"
 
 #: bodhi_update/app.py:836
 #, fuzzy
@@ -185,7 +183,7 @@ msgstr "Сістэмны пакет"
 
 #: bodhi_update/app.py:928
 msgid "Blocked by held package or dependency constraints"
-msgstr ""
+msgstr "Заблакавана затрыманым пакетам або абмежаваннямі залежнасцей"
 
 #: bodhi_update/app.py:934 bodhi_update/app.py:974
 #: bodhi_update/hold_controller.py:128
@@ -217,7 +215,8 @@ msgstr "Памылка праверкі: %(exc)s"
 #: bodhi_update/app.py:1071
 msgid "No privilege tool found. Please reboot manually."
 msgstr ""
-"Інструмент прывілеяў не знойдзены. Калі ласка, перазапусціце сістэму ўручную."
+"Інструмент прывілеяў не знойдзены. Калі ласка, перазапусціце сістэму "
+"ўручную."
 
 #: bodhi_update/app.py:1079
 #, python-format
@@ -261,8 +260,7 @@ msgid ""
 "You should have received a copy of the GNU General Public License\n"
 "along with this program.  If not, see <https://www.gnu.org/licenses/>."
 msgstr ""
-"Гэтая праграма з'яўляецца свабодным праграмным забеспячэннем: вы можаце "
-"распаўсюджваць яе і/або змяняць\n"
+"Гэтая праграма з'яўляецца свабодным праграмным забеспячэннем: вы можаце распаўсюджваць яе і/або змяняць\n"
 "на ўмовах GNU General Public License, якая была апублікавана\n"
 "Free Software Foundation, версіі 3 гэтай Ліцэнзіі, або\n"
 "(па вашаму выбару) любой больш позняй версіі.\n"
@@ -273,8 +271,7 @@ msgstr ""
 "GNU General Public License.\n"
 "\n"
 "Вы павінны былі атрымаць копію GNU General Public License\n"
-"разам з гэтай праграмай. Калі гэта не так, глядзіце <https://www.gnu.org/"
-"licenses/>."
+"разам з гэтай праграмай. Калі гэта не так, глядзіце <https://www.gnu.org/licenses/>."
 
 #: bodhi_update/dialogs.py:48
 #, fuzzy
@@ -332,15 +329,15 @@ msgstr "Ліцэнзія"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "Бэкэнды"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
-msgstr ""
+msgstr "Блакаванне пакета..."
 
 #: bodhi_update/hold_controller.py:150
 msgid "Unlocking package..."
-msgstr ""
+msgstr "Разблакаванне пакета..."
 
 #: bodhi_update/hold_controller.py:161 bodhi_update/refresh_controller.py:167
 #, fuzzy
@@ -349,17 +346,17 @@ msgstr "Чаканне аўтэнтыфікацыі..."
 
 #: bodhi_update/hold_controller.py:196
 msgid "apt-mark failed (unknown error)"
-msgstr ""
+msgstr "apt-mark не ўдалося (невядомая памылка)"
 
 #: bodhi_update/hold_controller.py:202
 #, python-format
 msgid "Package '%(name)s' is now held."
-msgstr ""
+msgstr "Пакет '%(name)s' цяпер затрыманы."
 
 #: bodhi_update/hold_controller.py:205
 #, python-format
 msgid "Package '%(name)s' is no longer held."
-msgstr ""
+msgstr "Пакет '%(name)s' больш не затрыманы."
 
 #: bodhi_update/refresh_controller.py:88
 #, python-format
@@ -369,7 +366,7 @@ msgstr "%(current_status)s — Папярэджанне: %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s get_updates не ўдалося. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -423,9 +420,9 @@ msgstr "%(message)s (уключае %(extras)s)"
 #, python-format
 msgid "%(n)d held/blocked package hidden"
 msgid_plural "%(n)d held/blocked packages hidden"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%(n)d затрыманы/заблакаваны пакет схаваны"
+msgstr[1] "%(n)d затрыманыя/заблакаваныя пакеты схаваныя"
+msgstr[2] "%(n)d затрыманых/заблакаваных пакетаў схавана"
 
 #: bodhi_update/status_messages.py:109
 #, fuzzy, python-format
@@ -438,15 +435,15 @@ msgstr[2] "%(count)d абнаўленне абрана · Сцягванне: %(
 #: data/applications//bodhi-update-manager.in:7
 #: data/applications//bodhi-update-manager-tray.in:7
 msgid "Install system updates and local packages for Bodhi Linux"
-msgstr ""
+msgstr "Усталяваць сістэмныя абнаўленні і лакальныя пакеты для Bodhi Linux"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:1
 msgid "Run the Update Manager privileged helper"
-msgstr ""
+msgstr "Запусціць прывілеяваны дапаможнік Update Manager"
 
 #: data/polkit/org.bodhi.updatemanager.policy.in.h:2
 msgid "Authentication is required to install or update packages."
-msgstr ""
+msgstr "Патрабуецца аўтэнтыфікацыя для ўсталявання або абнаўлення пакетаў."
 
 #~ msgid "Show Flatpak updates"
 #~ msgstr "Паказваць абнаўленні Flatpak"
@@ -480,16 +477,16 @@ msgstr ""
 #~ msgstr "Працэс усталёўкі запушчаны (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
 #~ "Увядзіце свой пароль у тэрмінале ніжэй. З меркаванняў бяспекі нічога не "
 #~ "будзе адлюстроўвацца падчас уводу."
 
 #~ msgid "Terminal auth in use — revealing VTE for password entry."
 #~ msgstr ""
-#~ "Выкарыстоўваецца аўтарызацыя праз тэрмінал — адлюстроўваецца VTE для "
-#~ "ўводу пароля."
+#~ "Выкарыстоўваецца аўтарызацыя праз тэрмінал — адлюстроўваецца VTE для ўводу "
+#~ "пароля."
 
 #, python-format
 #~ msgid "Starting installation: %s"

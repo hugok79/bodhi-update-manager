@@ -6,8 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/"
-"issues\n"
+"Report-Msgid-Bugs-To: https://github.com/flux-abyss/bodhi-update-manager/issues\n"
 "POT-Creation-Date: 2026-04-27 17:51-0400\n"
 "PO-Revision-Date: 2026-04-08 17:36+0200\n"
 "Last-Translator: diekrz2 <diekrz2@bodhilinux.com>\n"
@@ -16,8 +15,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #: bodhi_update/app.py:89 bodhi_update/dialogs.py:70
 #: data/applications//bodhi-update-manager.in:5
@@ -257,16 +255,14 @@ msgid ""
 "You should have received a copy of the GNU General Public License\n"
 "along with this program.  If not, see <https://www.gnu.org/licenses/>."
 msgstr ""
-"Ten program jest wolnym oprogramowaniem: możesz go rozpowszechniać i/lub "
-"modyfikować\n"
+"Ten program jest wolnym oprogramowaniem: możesz go rozpowszechniać i/lub modyfikować\n"
 "na warunkach Powszechnej Licencji Publicznej GNU, opublikowanej przez\n"
 "Free Software Foundation, w wersji 3 tej Licencji lub\n"
 "(na twoje życzenie) każdej późniejszej.\n"
 "\n"
 "Ten program jest rozpowszechniany w nadziei, że będzie użyteczny,\n"
 "ale BEZ JAKIEJKOLWIEK GWARANCJI; nawet bez domyślnej gwarancji\n"
-"PRZYDATNOŚCI HANDLOWEJ lub PRZYDATNOŚCI DO OKREŚLONYCH ZASTOSOWAŃ. Więcej "
-"szczegółów znajdziesz w\n"
+"PRZYDATNOŚCI HANDLOWEJ lub PRZYDATNOŚCI DO OKREŚLONYCH ZASTOSOWAŃ. Więcej szczegółów znajdziesz w\n"
 "Powszechnej Licencji Publicznej GNU.\n"
 "\n"
 "Powinieneś otrzymać kopię Powszechnej Licencji Publicznej GNU\n"
@@ -328,7 +324,7 @@ msgstr "Licencja"
 
 #: bodhi_update/dialogs.py:211
 msgid "Backends"
-msgstr ""
+msgstr "Zaplecze"
 
 #: bodhi_update/hold_controller.py:150
 msgid "Locking package..."
@@ -364,7 +360,7 @@ msgstr "%(current_status)s — Uwaga: %(message)s"
 #: bodhi_update/refresh_controller.py:141
 #, python-format
 msgid "%(name)s get_updates failed. (%(exc)s)"
-msgstr ""
+msgstr "%(name)s nie udało się pobrać aktualizacji. (%(exc)s)"
 
 #: bodhi_update/refresh_controller.py:149
 msgid "Package lists refreshed."
@@ -479,8 +475,8 @@ msgstr ""
 #~ msgstr "Proces instalacji uruchomiony (pid %s)."
 
 #~ msgid ""
-#~ "Enter your password in the terminal below. For security, nothing will "
-#~ "appear while typing."
+#~ "Enter your password in the terminal below. For security, nothing will appear"
+#~ " while typing."
 #~ msgstr ""
 #~ "Wprowadź swoje hasło w terminalu poniżej. Ze względów bezpieczeństwa, nic "
 #~ "nie będzie widoczne podczas wpisywania."
@@ -513,8 +509,7 @@ msgstr ""
 
 #, python-format
 #~ msgid "Update failed. Exit code: %(exit_code)s. See Details below."
-#~ msgstr ""
-#~ "Aktualizacja nieudana. Kod wyjścia: %(exit_code)s. Szczegóły poniżej."
+#~ msgstr "Aktualizacja nieudana. Kod wyjścia: %(exit_code)s. Szczegóły poniżej."
 
 #, python-format
 #~ msgid "Update failed. Exit code: %(exit_code)s"
@@ -530,8 +525,8 @@ msgstr ""
 #~ "Installing from multiple package sources simultaneously is not yet "
 #~ "supported. Please select packages from one source type only."
 #~ msgstr ""
-#~ "Jednoczesna instalacja z wielu źródeł pakietów nie jest jeszcze "
-#~ "obsługiwana. Proszę wybrać pakiety tylko z jednego typu źródła."
+#~ "Jednoczesna instalacja z wielu źródeł pakietów nie jest jeszcze obsługiwana."
+#~ " Proszę wybrać pakiety tylko z jednego typu źródła."
 
 #, python-format
 #~ msgid "Requested installation for unknown backend: %(backend_id)s"
