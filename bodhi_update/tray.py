@@ -147,10 +147,10 @@ class TrayIcon:
         """
         win = self._app.get_or_create_window()
         if win.get_visible() and self._shown:
-            log.debug("toogle window hide")
+            log.debug("toggle window hide")
             win.hide()
         else:
-            log.debug("toogle window show: last count = %d", self._last_count)
+            log.debug("toggle window show: last count = %d", self._last_count)
             win.present()
             self._shown = True
             # Fixme: Do we want or need this. Maybe on first use only? or not at all?
