@@ -32,42 +32,6 @@ import re
 import sys
 import subprocess
 
-# ---------------------------------------------------------------------------
-# Validation helpers (module-level so they can be tested without root)
-# ---------------------------------------------------------------------------
-
-# Debian/Ubuntu package names: alphanumeric + '.', '+', '-'; 1-128 chars long;
-# must start with a letter or digit.  An optional multiarch suffix of the form
-# :<arch> (e.g. :i386, :amd64) is allowed after the base name.
-_PACKAGE_RE = re.compile(
-    r"^[a-z0-9][a-z0-9.+\-]{0,127}"
-    r"(?::[a-z0-9][a-z0-9-]*)?$"
-)
-
-
-def _validate_package_name(name: str) -> None:
-    """Raise ValueError if *name* is not a legal Debian package name."""
-    if not _PACKAGE_RE.match(name):
-        raise ValueError(f"Invalid package name: {name!r}")
-
-
-def _validate_deb_path(path: str) -> str:
-    """Normalise and validate a .deb file path.
-
-    Returns the normalised absolute path on success.
-    Raises ValueError / FileNotFoundError on bad input.
-    """
-    norm = os.path.abspath(os.path.expanduser(path))
-
-    if not norm.lower().endswith(".deb"):
-        raise ValueError(f"Not a .deb file: {path!r}")
-
-    if not os.path.isfile(norm):
-        raise FileNotFoundError(f"File not found or not a regular file: {path!r}")
-
-    return norm
-
-
 def _signal_auth_success(sentinel_path: str | None) -> None:
     """Signal the GUI that authentication has succeeded.
 
@@ -120,13 +84,6 @@ def _cmd_install(args: list[str], sentinel_path: str | None) -> int:
         print("error: 'install' requires at least one package name.", file=sys.stderr)
         return 1
 
-    try:
-        for pkg in args:
-            _validate_package_name(pkg)
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-
     _signal_auth_success(sentinel_path)
     result = subprocess.run(
         ["apt-get", "install", "-y", *args],
@@ -145,16 +102,10 @@ def _cmd_install_deb(args: list[str], sentinel_path: str | None) -> int:
         print("error: 'install-deb' requires exactly one .deb path.", file=sys.stderr)
         return 1
 
-    try:
-        norm_path = _validate_deb_path(args[0])
-    except (ValueError, FileNotFoundError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-
     _signal_auth_success(sentinel_path)
     # No -y: allow debconf prompts so the VTE terminal can handle them.
     result = subprocess.run(
-        ["apt-get", "install", norm_path],
+        ["apt-get", "install", args[0],
         check=False,
     )
     return result.returncode
@@ -175,11 +126,7 @@ def _cmd_hold(args: list[str], sentinel_path: str | None) -> int:
     if len(args) != 1:
         print("error: 'hold' requires exactly one package name.", file=sys.stderr)
         return 1
-    try:
-        _validate_package_name(args[0])
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+
     _signal_auth_success(sentinel_path)
     result = subprocess.run(["apt-mark", "hold", args[0]], check=False)
     return result.returncode
@@ -190,11 +137,7 @@ def _cmd_unhold(args: list[str], sentinel_path: str | None) -> int:
     if len(args) != 1:
         print("error: 'unhold' requires exactly one package name.", file=sys.stderr)
         return 1
-    try:
-        _validate_package_name(args[0])
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+
     _signal_auth_success(sentinel_path)
     result = subprocess.run(["apt-mark", "unhold", args[0]], check=False)
     return result.returncode
@@ -208,7 +151,7 @@ _COMMANDS = {
     "install-deb": _cmd_install_deb,
     "hold": _cmd_hold,
     "unhold": _cmd_unhold,
-    "reboot": _cmd_reboot,
+    "reboot": _cmd_reboot
 }
 
 
@@ -228,7 +171,7 @@ def main() -> int:
         print(
             f"usage: {os.path.basename(sys.argv[0])} "
             "<refresh|upgrade|install|install-deb|reboot> [args...]",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
 
@@ -240,7 +183,7 @@ def main() -> int:
         print(
             f"error: unknown command {command!r}. "
             f"Allowed: {', '.join(_COMMANDS)}",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
 
