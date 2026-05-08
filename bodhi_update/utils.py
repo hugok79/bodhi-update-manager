@@ -87,7 +87,7 @@ def get_pkg_severity(name: str, category: str, backend: str) -> str:
 
 
 def validate_deb_files(deb_files: list[str]) -> list[str]:
-    """Validate Debian package paths and return absolute Path objects."""
+    """Validate Debian package paths and return normalized paths."""
     validated: list[str] = []
 
     for deb in deb_files:
