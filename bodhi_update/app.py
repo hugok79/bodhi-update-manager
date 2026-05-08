@@ -116,6 +116,10 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self.prefs = self.pref_store.load()
         self.backend_service = BackendUIService(self.prefs)
 
+        self.install_controller = InstallController(self)
+        self.refresh_controller = RefreshController(self)
+        self.hold_controller = HoldController(self)
+
         # Guard flag used by _set_show_descriptions() to suppress menu re-entry.
         self._syncing_desc = False
 
@@ -144,9 +148,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
         self._build_toolbar()
         self._build_reboot_bar()
         self._build_stack()
-        self.install_controller = InstallController(self)
-        self.refresh_controller = RefreshController(self)
-        self.hold_controller = HoldController(self)
         self._build_status()
         log.debug("Build ui start")
         if deb_path is not None:
