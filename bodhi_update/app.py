@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 from gettext import bindtextdomain, gettext as _, textdomain
+import argparse
 import logging
 import os
 import subprocess
@@ -38,14 +39,19 @@ from bodhi_update.status_messages import (  # noqa: E402
 )
 from bodhi_update.tray import TrayIcon  # noqa: E402
 from bodhi_update.utils import (  # noqa: E402
-    find_privilege_tool, format_size, get_pkg_severity, reboot_required,
+    find_privilege_tool, format_size, get_pkg_severity, reboot_required, validate_deb_files
 )
-
+from bodhi_update._version import __version__
 
 APP_NAME = "bodhi-update-manager"
 
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(levelname)-5s [%(filename)s:%(lineno)d] %(message)s")
+INFO_LOG_FORMAT = "[%(levelname)s] %(message)s"
+DEBUG_LOG_FORMAT = (
+    "%(levelname)-5s "
+    "[%(name)s:%(filename)s:%(lineno)d] "
+    "%(message)s"
+)
+logging.basicConfig(level=logging.INFO, format=INFO_LOG_FORMAT)
 log = logging.getLogger(APP_NAME)
 
 bindtextdomain(APP_NAME, "/usr/share/locale")
@@ -1048,7 +1054,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
                 deb_path,
                 _("Installing %(deb_name)s...") % {"deb_name": deb_name},
             )
-        except (RuntimeError, ValueError, FileNotFoundError) as exc:
+        except RuntimeError as exc:
             self.set_install_busy(False)
             self.install_progress.set_fraction(0.0)
             self.install_progress.set_text(_("Failed"))
@@ -1240,7 +1246,10 @@ class UpdateManagerApplication(Gtk.Application):
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
         )
         self._tray_mode: bool = False
-        self._deb_path = deb_path
+        self._deb_path: str = None
+        self._only_kernel: bool = False
+        self._only_security: bool = False
+        # self._debug: bool = False
         self._window: UpdateManagerWindow | None = None
         self._tray = None
         self._held_for_tray: bool = False
@@ -1251,8 +1260,16 @@ class UpdateManagerApplication(Gtk.Application):
 
     def do_command_line(self, command_line) -> int:  # type: ignore[override]
         """Parse --tray from the GTK command line before activation."""
-        args = command_line.get_arguments()[1:]
-        self._tray_mode = "--tray" in args
+        args = command_line.get_arguments()
+        if "debug" in args:
+            logging.getLogger().setLevel(logging.DEBUG)
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                handler.setFormatter(logging.Formatter(DEBUG_LOG_FORMAT))
+                log.debug("App arguments: %s", args)
+        self._only_kernel = "kernel" in args
+        self._only_security = "security" in args
+        self._tray_mode = "tray" in args
         self.activate()
         return 0
 
@@ -1320,17 +1337,93 @@ class UpdateManagerApplication(Gtk.Application):
         return False  # Let default destroy proceed → app exits
 
 
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="UpdateManager",
+        description="A lightweight graphical update manager for Debian/Ubuntu distros"
+    )
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "-k", "--only-kernel",
+         action="store_true",
+         help="only include kernel updates"
+     )
+    group.add_argument(
+        "-s", "--only-security",
+        action="store_true",
+        help="only include security updates"
+    )
+
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}"
+    )
+
+    parser.add_argument(
+        "-l", "--license",
+        action="store_true",
+        help="show license information and exit"
+    )
+
+    parser.add_argument(
+        "-t", "--tray",
+        action="store_true",
+        help="start in systray"
+    )
+
+    parser.add_argument(
+        "-d", "--debug",
+        action="store_true",
+        help="display debug information"
+    )
+
+    parser.add_argument(
+        "deb_files",
+        nargs="*",
+        metavar="DEB",
+        help="deb files to install"
+    )
+
+    return parser
+
+
 def main() -> None:
     """Entry point: parse argv, create the application, and run."""
-    # --tray is consumed by do_command_line(); only look for a .deb path here.
+
     deb_path: str | None = None
-    for arg in sys.argv[1:]:
-        if arg.lower().endswith(".deb"):
-            deb_path = arg
-            break
+    LICENSE_TEXT = "(c) 2026 Joseph 'flux.abyss' Wiley GPL-3.0-or-later"
+    cli_args = []
+
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.license:
+        print(LICENSE_TEXT)
+        return 0
+    if args.only_kernel:
+       cli_args.append("kernel")
+    if args.only_security:
+        cli_args.append("security")
+    if args.tray:
+        cli_args.append("tray")
+    if args.debug:
+        cli_args.append("debug")
+    # If deb file provided → install mode
+    if args.deb_files and args.tray:
+        print("UpdateManager error: tray mode does not support deb file installation.", file=sys.stderr)
+        exit(1)
+    elif args.deb_files and not args.tray:
+        try:
+            norm_files = validate_deb_files(args.deb_files)
+            deb_path = norm_files[0]
+        except (ValueError, FileNotFoundError) as err:
+            print(f"UpdateManager error: {err}.", file=sys.stderr)
+            exit(3)
 
     app = UpdateManagerApplication(deb_path=deb_path)
-    app.run(sys.argv)
+    app.run(cli_args)
 
 if __name__ == "__main__":
 
