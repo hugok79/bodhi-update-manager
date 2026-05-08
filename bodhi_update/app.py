@@ -97,10 +97,14 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
     def __init__(
         self,
         deb_path: str | None = None,
-        no_cache: bool = False,
+        security: bool = False,
+        kernel: bool = False,
+        no_cache: bool = False
     ) -> None:
         super().__init__(title=_("Update Manager"))
         self._no_cache = no_cache
+        self._security = security
+        self._kernel = kernel
         self._apply_adaptive_window_size()
         self.set_icon_name("bodhi-update-manager")
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -496,7 +500,12 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
     def _rebuild_category_combo(self) -> None:
         """Rebuild the category combo from current backend state + prefs."""
-        current_id = self.category_combo.get_active_id() or "all"
+        if self._security:
+            current_id = "security"
+        elif self._kernel:
+            current_id = "kernel"
+        else:
+            current_id = self.category_combo.get_active_id() or "all"
 
         self.category_combo.remove_all()
 
@@ -1303,6 +1312,8 @@ class UpdateManagerApplication(Gtk.Application):
         if self._window is None:
             self._window = UpdateManagerWindow(
                 deb_path=self._deb_path,
+                security=self._only_security,
+                kernel=self._only_kernel,
                 no_cache=no_cache,
             )
             self._window.set_application(self)
