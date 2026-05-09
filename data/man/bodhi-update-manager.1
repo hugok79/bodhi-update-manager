@@ -153,14 +153,14 @@ Schedules periodic refresh checks using systemd user timers.
 The timer may be enabled with:
 .PP
 .nf
-.B systemctl --user enable --now bodhi-update-manager-refresh.timer
+.B systemctl --system enable --now bodhi-update-manager-refresh.timer
 .fi
 
 .PP
 Timer status may be inspected with:
 .PP
 .nf
-.B systemctl --user status bodhi-update-manager-refresh.timer
+.B systemctl --system status bodhi-update-manager-refresh.timer
 .fi
 
 .SH FILES
