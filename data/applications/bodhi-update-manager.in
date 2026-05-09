@@ -2,9 +2,7 @@
 Version=1.0
 Type=Application
 Name=Update Manager
-Name[pt]=Gestor de Atualizações
 Comment=Install system updates and local packages for Bodhi Linux
-Comment[pt]=Instala atualizações do sistema e pacotes locais no Bodhi Linux
 Exec=bodhi-update-manager %f
 Icon=bodhi-update-manager
 Terminal=false
@@ -12,3 +10,4 @@ MimeType=application/vnd.debian.binary-package;
 Categories=System;PackageManager;
 StartupNotify=true
 NoDisplay=false
+Keywords=package;apt;dpkg;install;upgrade;

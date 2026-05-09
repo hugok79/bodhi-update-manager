@@ -15,7 +15,7 @@ set -euo pipefail
 TRANSLATION_DIR="po"
 POT_FILE="$TRANSLATION_DIR/bodhi-update-manager.pot"
 FILE_LIST="$TRANSLATION_DIR/POTFILES.in"
-APP_DIR="data/applications/"
+APP_DIR="data/applications"
 DESKTOP_TEMPLATE="$APP_DIR/bodhi-update-manager.in"
 XDG_TEMPLATE="$APP_DIR/bodhi-update-manager-tray.in"
 POLICY_TEMPLATE="data/polkit/org.bodhi.updatemanager.policy.in"
@@ -93,12 +93,20 @@ echo -e "\nGenerating translated Desktop files"
 msgfmt \
   --desktop \
   --template="$DESKTOP_TEMPLATE" \
+  --keyword=Name \
+  --keyword=GenericName \
+  --keyword=Comment \
+  --keyword=Keywords \
   -d "$TRANSLATION_DIR" \
   -o "$DESKTOP_OUTPUT"
 
 msgfmt \
   --desktop \
   --template="$XDG_TEMPLATE" \
+  --keyword=Name \
+  --keyword=GenericName \
+  --keyword=Comment \
+  --keyword=Keywords \
   -d "$TRANSLATION_DIR" \
   -o "$XDG_OUTPUT"
 
