@@ -1,0 +1,222 @@
+'\" t
+.\"     Title: bodhi-update-manager
+.\"    Author: rbt-ylee <ylee@bodhilinux.com>
+.\"      Date: 09 MAY 2026
+.\"    Manual: BODHI-UPDATE-MANAGER
+.\"    Source: Linux
+.\"  Language: English
+.\"
+.TH BODHI-UPDATE-MANAGER 1 "2026-04-14" "Bodhi Linux" "User Commands"
+.SH NAME
+bodhi-update-manager \- graphical update manager for Debian-based systems
+
+.SH SYNOPSIS
+.B bodhi-update-manager
+.RI [ OPTIONS ]
+.RI [ DEB_FILE ...]
+
+.SH DESCRIPTION
+.B bodhi-update-manager
+is a graphical update manager for Bodhi Linux and other Debian/Ubuntu-based
+systems.
+
+It provides a unified interface for viewing, filtering, and installing system
+updates from multiple sources. Supported update sources may include APT,
+Flatpak, and Snap through a backend plugin system.
+
+The application is designed to be lightweight, modular, and extensible.
+
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display a summary of available options and exit.
+
+.TP
+.BR \-v ", " \-\-version
+Display version information and exit.
+
+.TP
+.BR \-l ", " \-\-license
+Display license information and exit.
+
+.TP
+.BR \-d ", " \-\-debug
+Enable verbose debug logging.
+Debug mode enables expanded logging output including module names, filenames,
+and line numbers.
+
+.TP
+.BR \-t ", " \-\-tray
+Start the application in tray mode.
+When enabled, the main window is not shown immediately and the application
+starts minimized to the system tray.
+
+.TP
+.BR \-s ", " \-\-security
+Show only security-related updates.
+
+.TP
+.BR \-k ", " \-\-kernel
+Show only kernel-related updates.
+
+.SH DEBIAN PACKAGE INSTALLATION
+One or more local Debian package files may be passed on the command line.
+
+.PP
+For example:
+.PP
+.nf
+.B bodhi-update-manager package.deb
+.fi
+
+.PP
+or:
+.PP
+.nf
+.B bodhi-update-manager package1.deb package2.deb
+.fi
+
+.PP
+If a valid package is supplied, the application launches the graphical
+installation workflow.
+
+.PP
+Supplied package files are validated before installation. The application
+checks that each path exists, is a regular file, uses a
+.B .deb
+suffix, and is recognized as a Debian binary package when MIME detection is
+available.
+
+.SH FEATURES
+.IP \(bu 2
+View available package updates.
+.IP \(bu 2
+Filter updates by category or backend.
+.IP \(bu 2
+Install selected updates.
+.IP \(bu 2
+Highlight security updates.
+.IP \(bu 2
+Handle held or blocked packages.
+.IP \(bu 2
+Support multiple update sources via backend plugins.
+.IP \(bu 2
+Provide systemd user timer and PolicyKit integration.
+
+.SH BACKENDS
+Updates are provided by backend plugins. Common backends include:
+
+.TP
+.B apt
+Debian/Ubuntu package management via APT.
+
+.TP
+.B flatpak
+Flatpak application updates, if available.
+
+.TP
+.B snap
+Snap package updates, if available.
+
+.PP
+Additional backends may be installed separately.
+
+.SH PLUGIN SYSTEM
+.B bodhi-update-manager
+supports dynamically discovered backend plugins via Python entry points.
+
+.PP
+Plugins must implement the defined backend interface and declare compatibility
+with the supported plugin API version.
+
+.PP
+Third-party plugins may extend the application to support additional update
+sources.
+
+.SH SYSTEMD INTEGRATION
+A systemd user service and timer are provided for periodic background refresh
+operations.
+
+.TP
+.IP \(bu 2
+.I /usr/lib/systemd/user/bodhi-update-manager-refresh.service
+.sp 2
+Runs background refresh operations for package metadata.
+
+.TP
+.IP \(bu 2
+.I /usr/lib/systemd/user/bodhi-update-manager-refresh.timer
+.sp 2
+Schedules periodic refresh checks using systemd user timers.
+
+.PP
+The timer may be enabled with:
+.PP
+.nf
+.B systemctl --user enable --now bodhi-update-manager-refresh.timer
+.fi
+
+.PP
+Timer status may be inspected with:
+.PP
+.nf
+.B systemctl --user status bodhi-update-manager-refresh.timer
+.fi
+
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/bodhi-update-manager/prefs.json
+
+.TP
+.I /usr/lib/bodhi-update-manager/
+Application modules and backend implementations.
+
+.TP
+.I /usr/libexec/bodhi-update-manager-root
+Internal helper used for privileged package operations.
+
+.SH ENVIRONMENT
+.TP
+.B XDG_CONFIG_HOME
+Defines the base directory for user-specific configuration files.
+
+.SH EXIT STATUS
+.TP
+.B 0
+Successful execution.
+
+.TP
+.B 1
+General runtime or validation failure.
+
+.TP
+.B 2
+Command-line parsing error.
+
+.SH BUGS
+Bugs may be reported via the project issue tracker:
+.br
+.I https://github.com/flux-abyss/bodhi-update-manager/issues
+
+.SH SEE ALSO
+.BR apt (8),
+.BR apt-get (8),
+.BR dpkg (1),
+.BR flatpak (1),
+.BR snap (1),
+.BR pkexec (1),
+.BR systemctl (1)
+
+.SH AUTHORS
+Joseph Wiley <flux.abyss@proton.me>
+.br
+Robert Wiley <ylee@bodhilinux.com>
+
+.SH COPYRIGHT
+Copyright (C) 2026 Bodhi Linux Team.
+
+.PP
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or, at your option, any later
+version.
