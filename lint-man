@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# lint-man:
+#     Lint project man pages with groff and mandoc when available.
+#
+#     Runs `groff -Wall -mandoc` over manual pages in data/man to catch roff
+#     formatting problems, then runs `mandoc -Tlint` for stricter manpage checks
+#     when mandoc is installed. If mandoc is unavailable, the mandoc-specific pass
+#     is skipped with a message; groff remains the baseline check.
+#
+
+set -eu
+
+MANPAGE=data/man/bodhi-update-manager.1
+
+if [ ! -f "$MANPAGE" ]; then
+    echo "Man page not found: $MANPAGE" >&2
+    exit 2
+fi
+
+groff -Wall -mandoc -Tutf8 "$MANPAGE" >/dev/null
+
+if ! command -v mandoc >/dev/null 2>&1; then
+    echo "mandoc is not installed; skipping man page lint."
+    echo "Install it with: sudo apt install mandoc"
+    exit 1
+fi
+
+mandoc -Tlint "$MANPAGE"
+
