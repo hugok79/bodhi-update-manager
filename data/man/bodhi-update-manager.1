@@ -133,17 +133,15 @@ with the supported plugin API version.
 Third-party plugins may extend the application to support additional update
 sources.
 
-.SH SYSTEMD INTEGRATION
+.SS SYSTEMD INTEGRATION
 A systemd user service and timer are provided for periodic background refresh
 operations.
 
-.TP
 .IP \(bu 2
 .I /usr/lib/systemd/user/bodhi-update-manager-refresh.service
 .sp 2
 Runs background refresh operations for package metadata.
 
-.TP
 .IP \(bu 2
 .I /usr/lib/systemd/user/bodhi-update-manager-refresh.timer
 .sp 2
