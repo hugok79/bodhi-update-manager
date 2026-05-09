@@ -92,7 +92,6 @@ def validate_deb_files(deb_files: list[str]) -> list[str]:
 
     for deb in deb_files:
         path = Path(deb).expanduser().resolve()
-
         log.debug("Deb file path: %s", path)
 
         if not path.exists():

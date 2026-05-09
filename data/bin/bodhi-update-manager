@@ -6,7 +6,4 @@ APP_ROOT="/usr/lib/bodhi-update-manager"
 
 export PYTHONPATH="${APP_ROOT}${PYTHONPATH:+:$PYTHONPATH}"
 
-# Do not let the current working directory shadow the installed package.
-cd / || exit 1
-
 exec python3 -m bodhi_update.app "$@"

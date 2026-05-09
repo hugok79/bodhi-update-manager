@@ -8,6 +8,7 @@ from gettext import bindtextdomain, gettext as _, textdomain
 import argparse
 import logging
 import os
+from pathlib import Path
 import subprocess
 import sys
 import threading
@@ -91,6 +92,13 @@ def clamp(value: int, lo: int, hi: int) -> int:
     return max(lo, min(value, hi))
 
 
+def normalize_file(name: str) -> str:
+    path = Path(name).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return(path)
+
+
 class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attributes
     """Main application window: update list, install screen, preferences, and tray hooks."""
 
@@ -155,7 +163,7 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
             self.show_all()
             self.install_details_revealer.set_reveal_child(False)
             self.reboot_info_bar.hide()
-            self._launch_deb_install(deb_path)
+            self._launch_deb_install(normalize_file(deb_path))
         else:
             log.debug("Build ui else %d", self._no_cache)
             self.show_all()
@@ -1058,7 +1066,6 @@ class UpdateManagerWindow(Gtk.Window):  # pylint: disable=too-many-instance-attr
 
     def _launch_deb_install(self, deb_path: str) -> None:
         deb_name = os.path.basename(deb_path)
-
         try:
             self.install_controller.launch_deb_install(
                 deb_path,
@@ -1256,7 +1263,7 @@ class UpdateManagerApplication(Gtk.Application):
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
         )
         self._tray_mode: bool = False
-        self._deb_path: str = None
+        self._deb_path: str = deb_path
         self._only_kernel: bool = False
         self._only_security: bool = False
         # self._debug: bool = False
@@ -1423,6 +1430,7 @@ def main() -> None:
     if args.debug:
         cli_args.append("debug")
     # If deb file provided → install mode
+
     if args.deb_files and args.tray:
         print("UpdateManager error: tray mode does not support deb file installation.", file=sys.stderr)
         exit(1)
