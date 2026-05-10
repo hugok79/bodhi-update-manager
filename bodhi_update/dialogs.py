@@ -235,3 +235,35 @@ class PreferencesDialog(Gtk.Dialog):
                 for backend_id, check in self._backend_checks.items()
             },
         }
+
+
+class Message(Gtk.MessageDialog):
+    """Simple message dialog that destroys itself after running."""
+    def __init__(
+        self,
+        title: str,
+        text: str,
+        text2: str | None = None,
+        parent: Gtk.Window | None = None,
+    ) -> None:
+        super().__init__(
+            transient_for=parent,
+            flags=Gtk.DialogFlags.MODAL if parent is not None else 0,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.NONE,
+        )
+
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_title(title)
+        self.set_markup(text)
+        self.add_button(_("OK"), Gtk.ResponseType.OK)
+
+        if text2:
+            self.format_secondary_markup(text2)
+
+    def show(self) -> int:
+        """Run the dialog, destroy it, and return the response."""
+        try:
+            return self.run()
+        finally:
+            self.destroy()
