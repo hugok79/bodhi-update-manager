@@ -1,0 +1,179 @@
+'\" t
+.\"     Title: bodhi-update-manager-plugins
+.\"    Author: rbt-ylee <ylee@bodhilinux.com>
+.\"      Date: 09 MAY 2026
+.\"    Manual: BODHI-UPDATE-MANAGER
+.\"    Source: Linux
+.\"  Language: English
+.\"
+.TH BODHI-UPDATE-MANAGER-PLUGINS 7 "2026-04-09" "Bodhi Linux" "File Formats and Conventions"
+.SH NAME
+bodhi-update-manager-plugins \- plugin interface for bodhi-update-manager
+
+.SH DESCRIPTION
+The
+.B bodhi-update-manager
+application supports third-party update backends through a versioned plugin
+interface.
+
+Plugins extend the application by providing additional update sources such as
+alternative package managers or external systems.
+
+Plugins are discovered dynamically using Python entry points.
+
+.SH PLUGIN API VERSION
+Plugins must declare compatibility with the supported plugin API version.
+
+The current plugin API version is:
+.TP
+.B 1
+
+Plugins declaring an incompatible API version will not be loaded.
+
+.SH ENTRY POINTS
+Plugins are registered using Python entry points under the group:
+.TP
+.B bodhi_update.backends
+
+Example (pyproject.toml):
+.PP
+.nf
+[project.entry-points."bodhi_update.backends"]
+example = "example_plugin.backend:ExampleBackend"
+.fi
+
+.SH BACKEND IMPLEMENTATION
+A plugin must define a backend class implementing the required interface.
+
+The backend must:
+.TP
+\(bu subclass the UpdateBackend base class
+.TP
+\(bu provide metadata via BackendMeta
+.TP
+\(bu implement required methods for update discovery and installation
+
+.SH METADATA
+Each backend must define a metadata object describing its behavior.
+
+Required fields include:
+.TP
+.B backend_id
+Unique identifier for the backend.
+
+.TP
+.B display_name
+Human-readable name.
+
+.TP
+.B API
+Plugin API version.
+
+Optional fields may include:
+.TP
+.B filter_group
+Logical grouping used in the user interface.
+
+.TP
+.B filter_label
+Label shown in the category selector.
+
+.TP
+.B filter_sort_order
+Sort order for the category selector.
+
+.TP
+.B icon_name
+Icon used in the update list.
+
+.TP
+.B show_in_preferences
+Whether the backend appears in the Preferences dialog.
+
+Informational fields:
+.TP
+.B author
+Name of the plugin author.
+
+.TP
+.B homepage
+Project or documentation URL.
+
+.TP
+.B version
+Plugin version string.
+
+.SH COMPATIBILITY
+The plugin API is versioned.
+
+Within a given major API version:
+.TP
+\(bu backward compatibility is maintained
+.TP
+\(bu new optional fields may be added
+.TP
+\(bu required interfaces will not change
+
+Breaking changes require a new plugin API version.
+
+.SH ERROR HANDLING
+Plugins are loaded dynamically.
+
+If a plugin:
+.TP
+\(bu fails to import
+.TP
+\(bu declares an incompatible API version
+.TP
+\(bu provides invalid metadata
+.TP
+\(bu raises exceptions during execution
+it will be skipped and a warning will be logged.
+.br
+A failing plugin must not prevent the application from starting.
+
+.SH SECURITY
+Plugins are executed as normal Python code within the application process.
+
+No sandboxing is provided.
+
+Plugins must be considered \fB\fItrusted code\fR.
+
+.SH EXAMPLE
+Minimal backend plugin:
+.PP
+.nf
+from bodhi_update.backends import UpdateBackend, BackendMeta
+
+class ExampleBackend(UpdateBackend):
+    meta = BackendMeta(
+        backend_id="example",
+        display_name="Example Backend",
+        API="1",
+    )
+
+    def get_updates(self):
+        return []
+
+    def install_updates(self, updates):
+        return True
+.fi
+
+.SH FILES
+Plugins are typically installed as Python packages and discovered via entry
+points.
+
+.SH SEE ALSO
+.BR bodhi-update-manager (1)
+
+.SH AUTHORS
+Joseph Wiley <flux.abyss@proton.me>
+.br
+Robert Wiley <ylee@bodhilinux.com>
+
+
+.SH COPYRIGHT
+Copyright (C) 2026 Bodhi Linux Team.
+
+This document is free documentation; you may redistribute it under the same
+terms as the GNU General Public License.

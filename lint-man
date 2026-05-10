@@ -12,13 +12,12 @@
 set -eu
 
 MANPAGE=data/man/bodhi-update-manager.1
+MANPAGEPLUGIN=data/man/bodhi-update-manager-plugins.7
 
 if [ ! -f "$MANPAGE" ]; then
     echo "Man page not found: $MANPAGE" >&2
     exit 2
 fi
-
-groff -Wall -mandoc -Tutf8 "$MANPAGE" >/dev/null
 
 if ! command -v mandoc >/dev/null 2>&1; then
     echo "mandoc is not installed; skipping man page lint."
@@ -26,5 +25,8 @@ if ! command -v mandoc >/dev/null 2>&1; then
     exit 1
 fi
 
+groff -Wall -mandoc -Tutf8 "$MANPAGE" >/dev/null
 mandoc -Tlint "$MANPAGE"
 
+groff -Wall -mandoc -Tutf8 "$MANPAGEPLUGIN" >/dev/null
+mandoc -Tlint "$MANPAGEPLUGIN"
