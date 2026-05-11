@@ -26,6 +26,10 @@ where = ["src"]
 homepage = "https://github.com/flux-abyss/bodhi-update-manager"
 issues = "https://github.com/flux-abyss/bodhi-update-manager/issues"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
 [tool.ruff.lint]
 # Because of gi.require_version we get this a lot
 ignore = ["E402"]
